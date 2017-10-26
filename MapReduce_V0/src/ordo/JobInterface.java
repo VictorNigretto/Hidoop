@@ -24,6 +24,7 @@ public interface JobInterface {
     public String getOutputFname();
     public SortComparator getSortComparator();
     
+    
     // La fonction qui fait tout !!!    
     // À SAVOIR :
     // 1) lancer les maps sur tous les chunks du fichier
