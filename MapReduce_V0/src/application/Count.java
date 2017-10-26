@@ -25,7 +25,7 @@ public class Count {
             long t1 = System.currentTimeMillis();
 
             // On ouvre un fichier qui se trouve dans Project.PAHT + "data" + args[0] 
-            // On lit tout le fichier ?
+            // On lit tout le fichier
 			Map<String,Integer> hm = new HashMap<>();
 			LineNumberReader lnr = new LineNumberReader(new InputStreamReader(new FileInputStream(Project.PATH+"data/"+args[0])));
 			
@@ -37,12 +37,17 @@ public class Count {
 				
 				// On crée un StringTokenizer qui permet de découper des chaînes selon un certain motif
 				StringTokenizer st = new StringTokenizer(l);
+				// tant qu'on a des tokens
 				while (st.hasMoreTokens()) {
+					// On le compte
 					String tok = st.nextToken();
-					if (hm.containsKey(tok)) hm.put(tok, hm.get(tok).intValue()+1);
-					else hm.put(tok, 1);
+					if (hm.containsKey(tok)) 
+						hm.put(tok, hm.get(tok).intValue()+1);
+					else 
+						hm.put(tok, 1);
 				}
 			}
+			// On écrit le fichier de résultat de notre comptage
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("count-res")));
 			for (String k : hm.keySet()) {
 				writer.write(k+"<->"+hm.get(k).toString());

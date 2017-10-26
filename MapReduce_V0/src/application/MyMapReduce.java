@@ -12,6 +12,7 @@ import formats.FormatWriter;
 import formats.KV;
 
 public class MyMapReduce implements MapReduce {
+	// Je ne sais pas à quoi ça sert
 	private static final long serialVersionUID = 1L;
 
 	// MapReduce program that computes word counts
@@ -23,31 +24,48 @@ public class MyMapReduce implements MapReduce {
 			StringTokenizer st = new StringTokenizer(kv.v);
 			while (st.hasMoreTokens()) {
 				String tok = st.nextToken();
-				if (hm.containsKey(tok)) hm.put(tok, hm.get(tok).intValue()+1);
-				else hm.put(tok, 1);
+				if (hm.containsKey(tok))
+					hm.put(tok, hm.get(tok).intValue()+1);
+				else
+					hm.put(tok, 1);
 			}
 		}
-		for (String k : hm.keySet()) writer.write(new KV(k,hm.get(k).toString()));
+		for (String k : hm.keySet())
+			writer.write(new KV(k,hm.get(k).toString()));
 	}
 	
 	public void reduce(FormatReader reader, FormatWriter writer) {
-                Map<String,Integer> hm = new HashMap<>();
+		
+        Map<String,Integer> hm = new HashMap<>();
 		KV kv;
 		while ((kv = reader.read()) != null) {
-			if (hm.containsKey(kv.k)) hm.put(kv.k, hm.get(kv.k)+Integer.parseInt(kv.v));
-			else hm.put(kv.k, Integer.parseInt(kv.v));
+			if (hm.containsKey(kv.k))
+				hm.put(kv.k, hm.get(kv.k)+Integer.parseInt(kv.v));
+			else
+				hm.put(kv.k, Integer.parseInt(kv.v));
 		}
-		for (String k : hm.keySet()) writer.write(new KV(k,hm.get(k).toString()));
+		for (String k : hm.keySet())
+			writer.write(new KV(k,hm.get(k).toString()));
 	}
 	
+	// Avec un paramètre : le nom du fichier !
 	public static void main(String args[]) {
+		// On crée un Job
+		// Qu'est-ce qu'un Job ?
+		// C'est l'application qui va s'occuper de lancer tous les maps
 		Job j = new Job();
+		// On lui dit le format et le nom du fichier qui nous intéresse
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);
-       long t1 = System.currentTimeMillis();
-		j.startJob(new MyMapReduce());
+        
+        // Pour le temps
+        long t1 = System.currentTimeMillis();
+        
+		j.startJob(new MyMapReduce()); // on devra exécuter le programme principal dans startJob
+		
+		// On affiche le temps qu'à pris le MapReduce
 		long t2 = System.currentTimeMillis();
         System.out.println("time in ms ="+(t2-t1));
         System.exit(0);
-		}
+	}
 }

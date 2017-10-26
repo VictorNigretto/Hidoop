@@ -1,7 +1,7 @@
 package formats;
 
 // On utilisera surtout les KV au début pour ne pas s'embrouiller avec les lignes
-// Un KV est un ensemble clé/valeur. Une clé c'est genre un entier. Une valeur c'est genre une ligne d'un fichier.
+// Un KV est un ensemble clé/valeur. Une clé c'est genre un entier (pas forcément !). Une valeur c'est genre une ligne d'un fichier.
 public class KV {
 
 	// On va vouloir stocker des KV dans des fichiers
