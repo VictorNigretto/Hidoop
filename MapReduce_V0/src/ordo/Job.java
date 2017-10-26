@@ -48,11 +48,12 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 	*****************************************/
 	
     public void startJob (MapReduce mr) {
+    	// 0) déterminer où lancer les maps
         // 1) lancer les maps sur tous les chunks du fichier
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps    
     	
-    	// récupérer les chunks du fichier ! x)
+    	// récupérer les chunks du fichier !
     	// Ils se trouvent sur les Daemons ! Comment-est-ce que j'y ai accès ?
     	for(int i = 0; i < this.numberOfMaps; i++) {
     		
