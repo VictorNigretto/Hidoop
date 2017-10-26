@@ -2,8 +2,10 @@ package ordo;
 
 import formats.Format;
 import map.MapReduce;
+import java.rmi.server.UnicastRemoteObject;
 
-public class Job implements JobInterface {
+
+public class Job extends UnicastRemoteObject implements JobInterface, CallBack  {
 	
 	/*****************************************
 	Attributs
@@ -22,7 +24,15 @@ public class Job implements JobInterface {
 	*****************************************/
 	
     public void startJob (MapReduce mr) {
+        // 1) lancer les maps sur tous les chunks du fichier
+        // 2) les récupérer quand ils ont finis
+        // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps    
     	
+    	// récupérer les chunks du fichier ! x)
+    	// Ils se trouvent sur les Daemons ! Comment-est-ce que j'y ai accès ?
+    	for(int i = 0; i < this.numberOfMaps; i++) {
+    		
+    	}
     }
 	
 	/*****************************************
