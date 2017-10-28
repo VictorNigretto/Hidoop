@@ -9,7 +9,7 @@ import java.io.IOException;
 
 import formats.Format;
 import formats.KV;
-import formats.LineFormat;
+import formats.FormatLine;
 //import formats.KVFormat;
 //import formats.LineFormat;
 

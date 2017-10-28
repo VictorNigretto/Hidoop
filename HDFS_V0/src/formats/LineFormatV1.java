@@ -16,6 +16,8 @@ import java.net.UnknownHostException;
 import formats.Format.OpenMode;
 
 public class LineFormat implements Format {
+	
+// Essayer de factoriser en classe générique classes envoi et reception
 
 	private String fname;	// nom du fichier
 //	private File file;		// fichier
@@ -41,11 +43,21 @@ public class LineFormat implements Format {
 				oos.writeObject(Commande.CMD_OPEN_R);
 				oos.close();
 				sock.close();
+				sock = new Socket("localhost",port);
+				oos = new ObjectOutputStream(sock.getOutputStream());		
+				oos.writeObject(fname);
+				oos.close();
+				sock.close();
 			}
 			if (mode == OpenMode.W) {
 				sock = new Socket("localhost",port);
 				oos = new ObjectOutputStream(sock.getOutputStream());
 				oos.writeObject(Commande.CMD_OPEN_W);
+				oos.close();
+				sock.close();
+				sock = new Socket("localhost",port);
+				oos = new ObjectOutputStream(sock.getOutputStream());		
+				oos.writeObject(fname);
 				oos.close();
 				sock.close();
 			}
@@ -144,6 +156,5 @@ public class LineFormat implements Format {
 	public void setFname(String fname) {
 		this.fname = fname;
 	}
-	
 	
 }

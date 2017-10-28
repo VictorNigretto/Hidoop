@@ -7,8 +7,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import formats.Format;
+import formats.Format.Type;
 import formats.KV;
-import formats.LineFormat;
+import formats.FormatLine;
 import formats.Format.Commande;
 
 public class Test {
@@ -17,23 +18,23 @@ public class Test {
 	public static void main(String[] args) {
 		
 
-		LineFormat lf = new LineFormat("filesample");
+		FormatLine lf = new FormatLine("test.txt",Type.LINE);
 
 		lf.open(Format.OpenMode.R);
 		KV kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(kv.k);
+		System.out.println(lf.getIndex());
 		
 		lf.open(Format.OpenMode.R);
 		kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(kv.k);
-		
+		System.out.println(lf.getIndex());
+	
 		lf.open(Format.OpenMode.R);
 		kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(kv.k);
-
+		System.out.println(lf.getIndex());
+		
 		kv = new KV("Cours","Math");
 		lf.open(Format.OpenMode.W);
 		lf.write(kv);
