@@ -39,13 +39,13 @@ public class HdfsClient {
 		Message<File> mFile = new Message<File>();
 		
     	File fichier = new File(localFSSourceFname);
-		FileReader fr = new FileReader(fichier);
-		BufferedReader br = new BufferedReader(fr);
 		
 		int nbServer = servers.length;
 		
     	if (fmt == Format.Type.LINE) {			
-
+    			FileReader fr = new FileReader(fichier);
+    			BufferedReader br = new BufferedReader(fr);
+    			
     			//Lire ligne par ligne et compter
     			int indLine = 1; 			
     			while (br .readLine() != null) {
@@ -66,19 +66,20 @@ public class HdfsClient {
     				int nbLineSent = quotient;
     				if (reste != 0) {
     					nbLineSent++;
+    					reste--;
     				}
     				String fragFile = "";
-    				for (int j = 0 ; j<nbLineSent ; j++) {
-    					fragFile = fragFile + br.readLine() + "/n";
+    				for (int j = 0 ; j<nbLineSent-1 ; j++) {
+    					fragFile = fragFile + br.readLine() + "\n";
     				}
+    				fragFile = fragFile + br.readLine();
+    				
     				mCMD.send(Commande.CMD_WRITE, servers[i]);
     				mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-    				
-    				
-    				
     				mString.send(fragFile, servers[i]);
     			}
-    			
+    			br.close();
+    			fr.close();	
     		} else if (fmt == Format.Type.KV) {
     			//Lire KV par KV et compter
     			int indKV = 1;
@@ -106,7 +107,7 @@ public class HdfsClient {
     				if (reste != 0) {
     					nbKVSent++;
     				}
-    				String fragFile = "";
+
     				for (int j = 0 ; j<nbKVSent ; j++) {
     					KVlist.add((KV) ois.readObject());
     				}
@@ -129,8 +130,6 @@ public class HdfsClient {
     			ois.close();
     			fis.close();
     		}
-    	br.close();
-		fr.close();	
     	} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -150,7 +149,7 @@ public class HdfsClient {
     	String content = "";
     	for (int i = 0 ; i < servers.length ; i++) {
     		mCMD.send(Commande.CMD_READ, servers[i]);
-    		mString.send(hdfsFname, servers[i]);
+    		mString.send(hdfsFname + String.valueOf(i), servers[i]);
     		
     		String recu = mString.reception(servers[i]);
     		System.out.println(recu);
