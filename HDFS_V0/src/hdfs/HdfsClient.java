@@ -151,9 +151,11 @@ public class HdfsClient {
     		mCMD.send(Commande.CMD_READ, servers[i]);
     		mString.send(hdfsFname + String.valueOf(i), servers[i]);
     		
-    		String recu = mString.reception(servers[i]);
-    		System.out.println(recu);
-    		content = content + mString.reception(servers[i]);
+    		if (i == servers.length-1) {
+    			content = content + mString.reception(servers[i]);
+    		} else {
+    			content = content + mString.reception(servers[i]) + "\n";
+    		}
     	}
     	File file = new File(localFSDestFname);
     	try {
@@ -174,7 +176,7 @@ public class HdfsClient {
             if (args.length<2) {usage(); return;}
 
             switch (args[0]) {
-              case "read": HdfsRead(args[1],null); break;
+              case "read": HdfsRead(args[1],"testRead.txt"); break;
               case "delete": HdfsDelete(args[1]); break;
               case "write": 
                 Format.Type fmt;
