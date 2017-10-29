@@ -15,7 +15,7 @@ import formats.FormatLine;
 
 public class HdfsClient {
 	
-	private int servers[] = {2000,3000,4000};
+	private int servers[] = {6666};
 
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");

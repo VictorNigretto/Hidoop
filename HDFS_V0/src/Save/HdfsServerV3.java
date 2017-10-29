@@ -19,7 +19,9 @@ import util.Message;
 
 public class HdfsServer {
 	
+	private static String fname;
 	private static String fragFile;
+	private static File file;
 	
 	public static void main (String[] args) throws IOException {
 		
@@ -27,6 +29,14 @@ public class HdfsServer {
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
 
+		//Pour tester
+		File fileRead = new File ("test.txt");
+		FileReader fr = new FileReader(fileRead);
+		char[] buf = new char[(int) fileRead.length()];
+		fr.read(buf);
+		fragFile = new String(buf);
+		fr.close();
+		
 		ServerSocket ss;
 		int port = 6666;
 		ss = new ServerSocket(port);
@@ -35,15 +45,26 @@ public class HdfsServer {
 			Commande cmd = (Commande) mCMD.reception(ss);
 			// Traiter la commande reçu
 			switch (cmd) {
-				case CMD_READ:
+				case CMD_OPEN_R:
 					// Envoyer le contenu fragFile
 					mString.send(fragFile, ss);
 					break;
+				case CMD_READ:
+					break;
 				case CMD_WRITE:
-					// Recupere write Hdfs Client
+					// Recuperer write Hdfs Client
+					
+					// Modifier pour liste de fichiers,(contenu,non,file)
+					// Creer le fichier lecture en dur
+					fname = mString.reception(ss);
+					file = new File(fname);
 					fragFile = (String) mString.reception(ss);
+					// Ecrire son contenu dans le fichier
+					FileWriter fw = new FileWriter(file);
+					fw.write(fragFile);
+					fw.close();
 				case CMD_DELETE:
-					// Supprimer contenu fragFile du serveur
+					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
 					fragFile = null;
 				default:
 					break;

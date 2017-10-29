@@ -15,10 +15,16 @@ public class FormatLine implements Format {
 // Essayer de factoriser en classe générique classes envoi et reception
 
 	private File fileRead;
-	private static FileInputStream fr;
+	private FileInputStream fr;
 	private File fileWrite;
-	private static FileOutputStream fw;
-	private static String lines[];
+	private FileOutputStream fw;
+	
+	private boolean OpenR = false;
+	private boolean OpenW = false;
+	
+	private String filePath;
+	
+	private String lines[];
 	
 	// soit Message m mais attention, ou un par type ???
 	private Message<Commande> mCMD;
@@ -32,6 +38,7 @@ public class FormatLine implements Format {
 	private Type type;		// type du format
 	
 	public FormatLine(String fname, Type type) {
+		// Mettre le port en  parametre
 		this.fname = fname;
 		this.type = type;
 		this.mCMD = new Message<Commande>();
@@ -42,24 +49,31 @@ public class FormatLine implements Format {
 	
 	public void open(OpenMode mode) {
 		try {
+			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
+			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
+			// Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
 		if (mode == OpenMode.R) {
-			//Creer fichier
-			fileRead = new File(fname);
-			//Creer descripteur
+			// Récupèrer contenu fichier et le découper en lignes
+			mCMD.send(Commande.CMD_OPEN_R,port);
+			//mString.send(fname,port);		précisez le fichier dont on veut obtenir le path
+			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
+			filePath = mString.reception(port);
+			fileRead = new File(filePath);
 			fr = new FileInputStream(fileRead);
-			
-			//ajout cond format line ou mauvaise endroit ; mettre dans FormatLine?
-			// lecture texte en ligne
-			/*int taille = (int) fileRead.length();
-   			byte[] buf = new byte[taille];
-   			fr.read(buf);
-   			String text = new String(buf);
-   			lines = text.split("\n");*/
-			
+			OpenR = true;
+			byte[] buf = new byte[(int) fileRead.length()];
+			fr.read(buf);
+			String fileContent = new String(buf);
+   			lines = fileContent.split("\n");	
 			}
 		if (mode == OpenMode.W) {
-			fileWrite = new File(fname + "-res");
+			// Créer le fichier résultat dans format ou serveur?
+			mCMD.send(Commande.CMD_OPEN_W,port);
+			mString.send(fname,port);
+			filePath = mString.reception(port);
+			fileWrite = new File(filePath);
 			fw = new FileOutputStream(fileWrite,true);
+			OpenW = true;
 		}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -68,29 +82,40 @@ public class FormatLine implements Format {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 	
 	public void close() {
 		//mCMD.send(Commande.CMD_CLOSE,port);
 		// fermer sock normalement je pense ou descripteurs
+		try {
+			if (OpenR) {	
+				fr.close();
+			}
+			if (OpenW) {	
+				fw.close();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public KV read() {
-		KV kv = new KV();
-		mCMD.send(Commande.CMD_READ,port);
-		String fileContent = mString.reception(port);
-		
+		// Créer KV index + ligne à index
+		KV kv = new KV(String.valueOf(index),lines[(int)index-1]);
 		index++;
 		return kv;
 	}
 
 	@Override
 	public void write(KV record) {
-		mCMD.send(Commande.CMD_WRITE,port);	
-		mType.send(type,port);	
-		mKV.send(record,port);
+		try {
+			fw.write((record.k + KV.SEPARATOR + record.v + "\n").getBytes());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override

@@ -23,24 +23,24 @@ public class Test {
 		lf.open(Format.OpenMode.R);
 		KV kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(lf.getIndex());
+		System.out.println(kv.k);
 		
-		lf.open(Format.OpenMode.R);
+		//lf.open(Format.OpenMode.R);
 		kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(lf.getIndex());
+		System.out.println(kv.k);
 	
-		lf.open(Format.OpenMode.R);
+		//lf.open(Format.OpenMode.R);
 		kv = lf.read();
 		System.out.println(kv.v);
-		System.out.println(lf.getIndex());
+		System.out.println(kv.k);
 		
 		kv = new KV("Cours","Math");
 		lf.open(Format.OpenMode.W);
 		lf.write(kv);
 		
 		kv = new KV("Prof","Ellips");
-		lf.open(Format.OpenMode.W);
+		//lf.open(Format.OpenMode.W);
 		lf.write(kv);
 
 	}
