@@ -25,20 +25,22 @@ public class HdfsServer {
 	
 	public static void main (String[] args) throws IOException {
 		
+		int port = Integer.parseInt(args[0]);
+		//port = 6666; // pour tester, a enlever
 		
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
 
 		//Pour tester
-		file = new File ("test.txt");
-		FileReader fr = new FileReader(file);
-		char[] buf = new char[(int) file.length()];
-		fr.read(buf);
-		fragFile = new String(buf);
-		fr.close();
+		/*file = new File ("test.txt");
+		FileReader frr = new FileReader(file);
+		char[] buff = new char[(int) file.length()];
+		frr.read(buff);
+		fragFile = new String(buff);
+		frr.close();*/
 		
 		ServerSocket ss;
-		int port = 6666;
+		
 		ss = new ServerSocket(port);
 		while (true) {
 			// Récupérer la commande demandé
@@ -58,6 +60,18 @@ public class HdfsServer {
 					mString.send(fileRes.getAbsolutePath(), ss);
 					break;
 				case CMD_READ:
+					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
+					String ffname = mString.reception(ss);
+					
+					System.out.println("DEBUT");
+					System.out.println(file == null);
+					System.out.println(file.canRead());
+					System.out.println("FIN");
+					
+					FileReader fr = new FileReader(file);
+					char[] buf = new char[(int) file.length()];
+					fr.read(buf);
+					mString.send(new String(buf),ss);					
 					break;
 				case CMD_WRITE:
 					// Recuperer write Hdfs Client
@@ -66,6 +80,7 @@ public class HdfsServer {
 					// Creer le fichier lecture en dur
 					fname = mString.reception(ss);
 					file = new File(fname);
+					//file.createNewFile();
 					fragFile = (String) mString.reception(ss);
 					// Ecrire son contenu dans le fichier
 					FileWriter fw = new FileWriter(file);

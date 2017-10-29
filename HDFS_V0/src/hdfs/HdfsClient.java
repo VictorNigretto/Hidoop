@@ -3,19 +3,26 @@
 package hdfs;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+
+import util.Message;
 
 import formats.Format;
+import formats.Format.Commande;
 import formats.KV;
 import formats.FormatLine;
-//import formats.KVFormat;
-//import formats.LineFormat;
 
 public class HdfsClient {
 	
-	private int servers[] = {6666};
+	private static int servers[] = {6666,5555,4444};
 
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");
@@ -26,46 +33,139 @@ public class HdfsClient {
     public static void HdfsDelete(String hdfsFname) {}
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
-    	if (fmt == Format.Type.LINE) {	
-    		try {  		
-    			File fichier = new File(localFSSourceFname);
-    			FileReader fr = new FileReader(fichier);
-    			BufferedReader br = new BufferedReader(fr);
-    			
-    			//Lire ligne par ligne
-    			/*String line = "";
-    			int indLine = 1;
-    			LineFormat lf = new LineFormat();
-    			while ((line = br .readLine()) != null) {
-    				//KV kv = new KV(Integer.toString(indLine),line);
-    				//lf.write(kv);
-    				System.out.print(Integer.toString(indLine) + " : " + line + "\n");
+    	try { 
+    	Message<String> mString = new Message<String>();
+		Message<Commande> mCMD = new Message<Commande>();
+		Message<File> mFile = new Message<File>();
+		
+    	File fichier = new File(localFSSourceFname);
+		FileReader fr = new FileReader(fichier);
+		BufferedReader br = new BufferedReader(fr);
+		
+		int nbServer = servers.length;
+		
+    	if (fmt == Format.Type.LINE) {			
+
+    			//Lire ligne par ligne et compter
+    			int indLine = 1; 			
+    			while (br .readLine() != null) {
     				indLine++;
-    			}*/
-    			
-    			// Creer tableau de lignes
-    			int taille = (int) fichier.length();
-    			char[] buf = new char[taille];
-    			fr.read(buf);
-    			String text = new String(buf);
-    			String lines[] = text.split("\n");
-    			for (int i = 0 ; i < lines.length-1 ; i++) {
-    				System.out.print((i+1) + " : " + lines[i] + "\n");
     			}
-   			
+    			int nbLine = indLine - 1;
+
+    			int quotient = nbLine/nbServer;
+    			int reste = nbLine%nbServer;
+    			
     			br.close();
     			fr.close();
-    		} catch (FileNotFoundException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		} catch (IOException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
+    			fr = new FileReader(fichier);
+    			br = new BufferedReader(fr);
+    			
+    			// Envoyer à chaque serveur, un fragment du fichier
+    			for (int i=0 ; i<nbServer ; i++) {
+    				int nbLineSent = quotient;
+    				if (reste != 0) {
+    					nbLineSent++;
+    				}
+    				String fragFile = "";
+    				for (int j = 0 ; j<nbLineSent ; j++) {
+    					fragFile = fragFile + br.readLine() + "/n";
+    				}
+    				mCMD.send(Commande.CMD_WRITE, servers[i]);
+    				mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+    				
+    				
+    				
+    				mString.send(fragFile, servers[i]);
+    			}
+    			
+    		} else if (fmt == Format.Type.KV) {
+    			//Lire KV par KV et compter
+    			int indKV = 1;
+    			
+    			FileInputStream fis = new FileInputStream (localFSSourceFname);
+    			ObjectInputStream ois = new ObjectInputStream (fis);
+    			while (ois.readObject() != null) {
+    				indKV++;
+    			}
+    			ois.close();
+    			int nbKV = indKV - 1;
+    			
+    			int quotient = nbKV/nbServer;
+    			int reste = nbKV%nbServer;
+    			
+    			ois.close();
+    			ois = new ObjectInputStream (fis);
+    			
+    			
+    			
+    			// Envoyer à chaque serveur, un fragment du fichier
+    			for (int i=0 ; i<nbServer ; i++) {
+    				ArrayList<KV> KVlist = new ArrayList<KV>();
+    				int nbKVSent = quotient;
+    				if (reste != 0) {
+    					nbKVSent++;
+    				}
+    				String fragFile = "";
+    				for (int j = 0 ; j<nbKVSent ; j++) {
+    					KVlist.add((KV) ois.readObject());
+    				}
+    				
+    				ois.close();
+    				File fileSent = new File("fileSent");
+    				FileOutputStream fos = new FileOutputStream ("fileSent");
+    				ObjectOutputStream oos = new ObjectOutputStream(fos);
+    				oos.writeObject(KVlist);
+    				oos.close();
+    				fos.close();
+    				
+    				
+    				mCMD.send(Commande.CMD_WRITE, servers[i]);
+    				mString.send(fichier.getName(), servers[i]);
+    				mFile.send(fileSent, servers[i]);
+
+    			}
+    			
+    			ois.close();
+    			fis.close();
     		}
-    	}
+    	br.close();
+		fr.close();	
+    	} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
     }
 
-    public static void HdfsRead(String hdfsFname, String localFSDestFname) { }
+    public static void HdfsRead(String hdfsFname, String localFSDestFname) {
+    	Message<String> mString = new Message<String>();
+    	Message<Commande> mCMD = new Message<Commande>();
+    	String content = "";
+    	for (int i = 0 ; i < servers.length ; i++) {
+    		mCMD.send(Commande.CMD_READ, servers[i]);
+    		mString.send(hdfsFname, servers[i]);
+    		
+    		String recu = mString.reception(servers[i]);
+    		System.out.println(recu);
+    		content = content + mString.reception(servers[i]);
+    	}
+    	File file = new File(localFSDestFname);
+    	try {
+			FileWriter fw = new FileWriter(file);
+			fw.write(content);
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
 
 	
     public static void main(String[] args) {
