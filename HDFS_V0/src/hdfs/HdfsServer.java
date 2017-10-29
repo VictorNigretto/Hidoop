@@ -63,15 +63,11 @@ public class HdfsServer {
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
 					String ffname = mString.reception(ss);
 					
-					System.out.println("DEBUT");
-					System.out.println(file == null);
-					System.out.println(file.canRead());
-					System.out.println("FIN");
-					
-					FileReader fr = new FileReader(file);
+					/*FileReader fr = new FileReader(file);
 					char[] buf = new char[(int) file.length()];
 					fr.read(buf);
-					mString.send(new String(buf),ss);					
+					mString.send(new String(buf),ss);*/	
+					mString.send(fragFile,ss);
 					break;
 				case CMD_WRITE:
 					// Recuperer write Hdfs Client
