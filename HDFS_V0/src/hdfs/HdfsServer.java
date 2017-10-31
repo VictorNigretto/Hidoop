@@ -84,7 +84,7 @@ public class HdfsServer {
 					fw.close();
 				case CMD_DELETE:
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
-					file = null;
+					file.delete();
 				default:
 					break;
 			}
