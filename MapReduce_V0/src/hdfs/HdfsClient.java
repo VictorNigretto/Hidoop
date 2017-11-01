@@ -3,7 +3,6 @@
 package hdfs;
 import formats.Format;
 import formats.KV;
-import formats.KVFormat; // TODO ==> groupe Yanis/Marine
 import formats.LineFormat; // TODO ==> groupe Yanis/Marine
 
 // Nous on s'occupe pas trop du client en fait !!! =)
