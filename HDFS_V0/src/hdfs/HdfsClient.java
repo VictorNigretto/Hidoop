@@ -30,7 +30,15 @@ public class HdfsClient {
         System.out.println("Usage: java HdfsClient delete <file>");
     }
 	
-    public static void HdfsDelete(String hdfsFname) {}
+    public static void HdfsDelete(String hdfsFname) {
+    	Message<Commande> mCMD = new Message<Commande>();
+    	Message<String> mString = new Message<String>();
+    	int nbServer = servers.length;
+    	for (int i=0 ; i<nbServer ; i++) {
+    		mCMD.send(Commande.CMD_DELETE, servers[i]);
+    		mString.send(hdfsFname + String.valueOf(i), servers[i]);
+    	}	
+    }
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try { 

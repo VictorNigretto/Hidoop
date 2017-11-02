@@ -19,29 +19,20 @@ import util.Message;
 
 public class HdfsServer {
 	
-	private static String fname;
+
 	private static String fragFile;
 	private static File file;
 	
 	public static void main (String[] args) throws IOException {
 		
 		int port = Integer.parseInt(args[0]);
-		//port = 6666; // pour tester, a enlever
 		
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
 
-		//Pour tester
-		/*file = new File ("test.txt");
-		FileReader frr = new FileReader(file);
-		char[] buff = new char[(int) file.length()];
-		frr.read(buff);
-		fragFile = new String(buff);
-		frr.close();*/
-		
 		ServerSocket ss;
-		
 		ss = new ServerSocket(port);
+		String fname;
 		while (true) {
 			// Récupérer la commande demandé
 			Commande cmd = (Commande) mCMD.reception(ss);
@@ -61,13 +52,15 @@ public class HdfsServer {
 					break;
 				case CMD_READ:
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
-					String ffname = mString.reception(ss);
-					
-					/*FileReader fr = new FileReader(file);
+					fname = mString.reception(ss);
+					file = new File(fname);
+					FileReader fr = new FileReader(file);
 					char[] buf = new char[(int) file.length()];
 					fr.read(buf);
-					mString.send(new String(buf),ss);*/	
-					mString.send(fragFile,ss);
+					fr.close();
+					mString.send(new String(buf),ss);
+					//mString.send(fragFile,ss);
+					
 					break;
 				case CMD_WRITE:
 					// Recuperer write Hdfs Client
@@ -82,9 +75,13 @@ public class HdfsServer {
 					FileWriter fw = new FileWriter(file);
 					fw.write(fragFile);
 					fw.close();
+					break;
 				case CMD_DELETE:
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
-					file = null;
+					fname = mString.reception(ss);
+					File f = new File(fname);
+					f.delete();
+					break;
 				default:
 					break;
 			}
