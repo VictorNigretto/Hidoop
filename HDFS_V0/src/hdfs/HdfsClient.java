@@ -44,7 +44,6 @@ public class HdfsClient {
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
-    		System.out.println("Demande d'écriture d'un fichier (LINE)...");
 
     		Message<String> mString = new Message<String>();
 			Message<Commande> mCMD = new Message<Commande>();
@@ -55,100 +54,115 @@ public class HdfsClient {
 			int nbServer = servers.length;
 
 			if (fmt == Format.Type.LINE) {
-					FileReader fr = new FileReader(fichier);
-					BufferedReader br = new BufferedReader(fr);
 
-					//Lire ligne par ligne et compter
-					int indLine = 1;
-					while (br .readLine() != null) {
-						indLine++;
+				Message<ArrayList<String>> mStringlist = new Message<ArrayList<String>>();
+				ArrayList<String> listS = new ArrayList<String>();
+				System.out.println("Demande d'écriture d'un fichier (LINE)...");
+
+				FileReader fr = new FileReader(fichier);
+				BufferedReader br = new BufferedReader(fr);
+
+				//Lire ligne par ligne et compter
+				int indLine = 1;
+				while (br .readLine() != null) {
+					indLine++;
+				}
+				int nbLine = indLine - 1;
+
+				int quotient = nbLine/nbServer;
+				int reste = nbLine%nbServer;
+
+				br.close();
+				fr.close();
+				fr = new FileReader(fichier);
+				br = new BufferedReader(fr);
+
+				// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de String contenant une seule String
+				for (int i=0 ; i<nbServer ; i++) {
+					int nbLineSent = quotient;
+					if (reste != 0) {
+						nbLineSent++;
+						reste--;
 					}
-					int nbLine = indLine - 1;
-
-					int quotient = nbLine/nbServer;
-					int reste = nbLine%nbServer;
-
-					br.close();
-					fr.close();
-					fr = new FileReader(fichier);
-					br = new BufferedReader(fr);
-
-					// Envoyer à chaque serveur, un fragment du fichier
-					for (int i=0 ; i<nbServer ; i++) {
-						int nbLineSent = quotient;
-						if (reste != 0) {
-							nbLineSent++;
-							reste--;
-						}
-						String fragFile = "";
-						for (int j = 0 ; j<nbLineSent-1 ; j++) {
-							fragFile = fragFile + br.readLine() + "\n";
-						}
-						fragFile = fragFile + br.readLine();
-
-						mCMD.send(Commande.CMD_WRITE, servers[i]);
-						System.out.println("envoyée au serveur " + i);
-						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-						mString.send(fragFile, servers[i]);
-						System.out.println("fragment envoyé au serveur " + i);
+					String fragFile = "";
+					for (int j = 0 ; j<nbLineSent-1 ; j++) {
+						fragFile = fragFile + br.readLine() + "\n";
 					}
-					br.close();
-					fr.close();
+					fragFile = fragFile + br.readLine();
+					listS.add(fragFile);
+
+					mCMD.send(Commande.CMD_WRITE, servers[i]);
+					System.out.println("envoyée au serveur " + i);
+					mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+					mStringlist.send(listS, servers[i]);
+					System.out.println("fragment envoyé au serveur " + i);
+				}
+				br.close();
+				fr.close();
 				} else if (fmt == Format.Type.KV) {
-					//Lire KV par KV et compter
+					Message<ArrayList<KV>> mKVlist = new Message<ArrayList<KV>>();
+
+				//Lire KV par KV et compter
 					System.out.println("Demande d'écriture d'un fichier (KV)...");
 
 					int indKV = 1;
 
 					FileInputStream fis = new FileInputStream (localFSSourceFname);
 					ObjectInputStream ois = new ObjectInputStream (fis);
-					while (ois.readObject() != null) {
+					KV unKV;
+
+					while (fis.available() > 0) {
+						unKV = (KV) ois.readObject();
+						System.out.println(unKV.toString());
 						indKV++;
 					}
-					ois.close();
+					System.out.println(indKV);
+
 					int nbKV = indKV - 1;
 
 					int quotient = nbKV/nbServer;
 					int reste = nbKV%nbServer;
 
 					ois.close();
-					ois = new ObjectInputStream (fis);
+					fis.close();
+					FileInputStream fis2 = new FileInputStream (localFSSourceFname);
+					ObjectInputStream ois2 = new ObjectInputStream (fis2);
 
 
 
-					// Envoyer à chaque serveur, un fragment du fichier
+					// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de KV
 					for (int i=0 ; i<nbServer ; i++) {
 						ArrayList<KV> KVlist = new ArrayList<KV>();
 						int nbKVSent = quotient;
+
 						if (reste != 0) {
 							nbKVSent++;
+							reste --;
 						}
 
 						for (int j = 0 ; j<nbKVSent ; j++) {
-							KVlist.add((KV) ois.readObject());
+							KV newKV = (KV) ois2.readObject();
+							System.out.println(newKV.toString());
+							KVlist.add(newKV);
+
 						}
 
-						ois.close();
-						File fileSent = new File("fileSent");
-						FileOutputStream fos = new FileOutputStream ("fileSent");
-						ObjectOutputStream oos = new ObjectOutputStream(fos);
-						oos.writeObject(KVlist);
-						oos.close();
-						fos.close();
+
+
 
 
 
 						mCMD.send(Commande.CMD_WRITE, servers[i]);
 						System.out.println("envoyée au serveur " + i);
-						mString.send(fichier.getName(), servers[i]);
-						mFile.send(fileSent, servers[i]);
+						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+						mKVlist.send(KVlist, servers[i]);
 						System.out.println("fragment envoyé au serveur " + i);
 
 
 					}
 
-					ois.close();
-					fis.close();
+					ois2.close();
+					fis2.close();
 				}
     	} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
