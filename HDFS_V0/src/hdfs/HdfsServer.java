@@ -16,20 +16,26 @@ import formats.Format.Commande;
 import formats.Format.Type;
 import formats.KV;
 import util.Message;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+import static formats.Format.Commande.CMD_DELETE;
+
 
 public class HdfsServer {
-	
+
 	private static String fname;
 	private static String fragFile;
 	private static File file;
-	
-	public static void main (String[] args) throws IOException {
+
+	public static void main(String[] args) throws IOException {
 
 		int port = Integer.parseInt(args[0]);
 		//port = 6666; // pour tester, a enlever
-		
+
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
+		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
 
 		//Pour tester
 		/*file = new File ("test.txt");
@@ -38,9 +44,9 @@ public class HdfsServer {
 		frr.read(buff);
 		fragFile = new String(buff);
 		frr.close();*/
-		
+
 		ServerSocket ss;
-		
+
 		ss = new ServerSocket(port);
 		System.out.println("Serveur démarré :)");
 		while (true) {
@@ -50,7 +56,7 @@ public class HdfsServer {
 			switch (cmd) {
 				case CMD_OPEN_R:
 					// Envoyer le path fragFile
-					// Gérer plusieus fichiers
+					// Gérer plusieusrs fichiers
 					System.out.print(" Demande d'ouverture en lecture reçue ...");
 					mString.send(file.getAbsolutePath(), ss);
 					System.out.println("fichier ouvert en lecture");
@@ -66,6 +72,8 @@ public class HdfsServer {
 					System.out.println("fichier ouvert en écriture");
 
 					break;
+				case CMD_CLOSE:
+					break;
 				case CMD_READ:
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
 					System.out.print(" Demande de lecture reçue ...");
@@ -75,8 +83,8 @@ public class HdfsServer {
 					/*FileReader fr = new FileReader(file);
 					char[] buf = new char[(int) file.length()];
 					fr.read(buf);
-					mString.send(new String(buf),ss);*/	
-					mString.send(fragFile,ss);
+					mString.send(new String(buf),ss);*/
+					mString.send(fragFile, ss);
 					System.out.println("fragment du fichier envoyé");
 
 					break;
@@ -84,18 +92,28 @@ public class HdfsServer {
 					System.out.print(" Demande d'écriture reçue ...");
 
 					// Recuperer write Hdfs Client
-					
+
 					// Modifier pour liste de fichiers,(contenu,non,file)
 					// Creer le fichier lecture en dur
 					fname = mString.reception(ss);
 					file = new File(fname);
 					//file.createNewFile();
-					fragFile = (String) mString.reception(ss);
+					// Reception de la liste
+					ArrayList<Object> listreceived = mList.reception(ss);
 					// Ecrire son contenu dans le fichier
-					FileWriter fw = new FileWriter(file);
-					fw.write(fragFile);
-					fw.close();
+					System.out.println(listreceived.toString());
+					FileOutputStream fos = new FileOutputStream(file);
+					ObjectOutputStream oos = new ObjectOutputStream(fos);
+					Iterator<Object> it = listreceived.iterator();
+					//tant qu'il y a des objets dans la liste on les écrit dans le fichier
+					while (it.hasNext()) {
+						oos.writeObject(it.next());
+					}
+					oos.close();
+					fos.close();
 					System.out.println("fragment du fichier enregistré");
+					break;
+
 
 				case CMD_DELETE:
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
@@ -105,9 +123,10 @@ public class HdfsServer {
 
 				default:
 					break;
+
 			}
+
 		}
-		
+
 	}
-	
 }
