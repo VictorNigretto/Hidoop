@@ -11,6 +11,7 @@ import formats.FormatReader;
 import formats.FormatWriter;
 import formats.KV;
 
+// Compte le nombre d'occurences de chaques mots d'un fichier stocké en HDFS
 public class MyMapReduce implements MapReduce {
 	// Je ne sais pas à quoi ça sert
 	private static final long serialVersionUID = 1L;

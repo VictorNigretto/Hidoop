@@ -2,13 +2,11 @@
 
 package hdfs;
 import formats.Format;
-import formats.KV;
-import formats.LineFormat; // TODO ==> groupe Yanis/Marine
 
 // Nous on s'occupe pas trop du client en fait !!! =)
 public class HdfsClient {
 
-	// La fonction pour engueuler le client quand il fait de la merde
+	// La fonction pour dire au client qu'il s'est trompế
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");
         System.out.println("Usage: java HdfsClient write <line|kv> <file>");
