@@ -1,10 +1,15 @@
 package ordo;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import formats.Format;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Job extends UnicastRemoteObject implements JobInterface, CallBack  {
@@ -24,6 +29,7 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 	/*****************************************
 	Constructeurs
 	*****************************************/
+	
 	public Job() throws RemoteException {
 		this.numberOfMaps = 10; //TODO
 		this.numberOfReduces = 1; //Pour la V0 uniquement
@@ -42,7 +48,6 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 		this.outputFName = outputFName;
 	}
 	
-	
 	/*****************************************
 	Start Job (méthode principale)
 	*****************************************/
@@ -53,10 +58,16 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps    
     	
-    	// récupérer les chunks du fichier !
+    	// récupérer les chunks du fichier ! x)
     	// Ils se trouvent sur les Daemons ! Comment-est-ce que j'y ai accès ?
+    	List<Daemon> demons = new ArrayList<Daemon>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
-    		
+    		try {
+				demons.add((Daemon) Naming.lookup("//ma_machine/mon_serveur"));
+				demons.get(i).runMap(map, reader, writer, this);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
     	}
     }
 	
