@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.util.Scanner;
 
+// Une ébauche pour pouvoir lancer les différentes applications
+// Mais nous n'avons pas réussi à la faire fonctionner ...
 public class ServiceHidoop {
 
     public static void main(String[] args) {
