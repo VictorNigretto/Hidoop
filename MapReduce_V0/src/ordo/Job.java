@@ -33,6 +33,7 @@ public class Job implements JobInterface {
 	private SortComparator sortComparator;
 	private Format.Type interFormat;
 	private String interFName;
+	private List<String> machines; //la liste des machines sur lesquelles tournent les démons
 
 
 	/*****************************************
@@ -42,7 +43,8 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.numberOfMaps = 10; //TODO
+		this.initMachines();
+		this.numberOfMaps = machines.size();
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
 	}
@@ -88,7 +90,8 @@ public class Job implements JobInterface {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
-				demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
+				demons.add((Daemon) Naming.lookup("//" + machines.get(i) + "/daemon"));
+				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -228,5 +231,11 @@ public class Job implements JobInterface {
     public SortComparator getSortComparator(){
     	return this.getSortComparator();
     }
-    
+
+    public void initMachines(){
+    	this.machines = new ArrayList<String>();
+    		machines.add("dragon.enseeiht.fr");
+    		machines.add("salameche.enseeiht.fr");
+    		machines.add("bulbizarre.enseeiht.fr");
+	}
 }

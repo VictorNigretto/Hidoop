@@ -1,5 +1,7 @@
 package ordo;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -36,16 +38,14 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		}
 	}
 
-
 	// Pour lancer un démon sur sa machine !
 	// Le premier paramètre sera le nom du démon
 	public static void main(String args[]) {
 		try {
-			// On le fait s'auto-construire ! Le pauvre XD Il est pas né qu'il faut déjà qu'il travail :D
-			Daemon d = new DaemonImpl(args[0]);
-			
+			Daemon d = new DaemonImpl("daemon");
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
-			Naming.rebind("//localhost/" + ((DaemonImpl) d).getName(), d);
+            String nomMachine = InetAddress.getLocalHost().getHostName();
+            Naming.rebind("//" + nomMachine + ".enseeiht.fr/" + ((DaemonImpl) d).getName(), d);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
