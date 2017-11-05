@@ -20,8 +20,8 @@ import util.Message;
 public class HdfsServer {
 	
 
-	private static String fragFile;
 	private static File file;
+	private static Type fmt;
 	
 	public static void main (String[] args) throws IOException {
 		
@@ -29,6 +29,8 @@ public class HdfsServer {
 		
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
+		Message<Type> mType = new Message<Type>();
+		Message<KV> mKV = new Message<KV>();
 
 		ServerSocket ss;
 		ss = new ServerSocket(port);
@@ -54,13 +56,31 @@ public class HdfsServer {
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
 					fname = mString.reception(ss);
 					file = new File(fname);
-					FileReader fr = new FileReader(file);
-					char[] buf = new char[(int) file.length()];
-					fr.read(buf);
-					fr.close();
-					mString.send(new String(buf),ss);
-					//mString.send(fragFile,ss);
+					mType.send(fmt, ss);
+					FileInputStream fis = new FileInputStream(file);
 					
+					switch (fmt) {
+						case LINE:
+							byte[] buf = new byte[(int) file.length()];
+							fis.read(buf);
+							fis.close();
+							mString.send(new String(buf),ss);
+							break;
+						case KV:
+							ObjectInputStream ois = new ObjectInputStream(fis);				
+							while (fis.available() != 0) {
+								try {
+									mKV.send((KV) ois.readObject(), ss);
+								} catch (ClassNotFoundException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							mKV.send(null, ss);			
+							ois.close();
+							break;
+					}
+					fis.close();	
 					break;
 				case CMD_WRITE:
 					// Recuperer write Hdfs Client
@@ -70,11 +90,32 @@ public class HdfsServer {
 					fname = mString.reception(ss);
 					file = new File(fname);
 					//file.createNewFile();
-					fragFile = (String) mString.reception(ss);
-					// Ecrire son contenu dans le fichier
-					FileWriter fw = new FileWriter(file);
-					fw.write(fragFile);
-					fw.close();
+					
+					fmt = mType.reception(ss);
+					switch (fmt) {
+						case LINE:
+							String fragFile = (String) mString.reception(ss);
+							// Ecrire son contenu dans le fichier
+							FileWriter fw = new FileWriter(file);
+							fw.write(fragFile);
+							fw.close();
+							break;
+						case KV:
+			    			FileOutputStream fos = new FileOutputStream (file,true);
+			    			ObjectOutputStream oos = new ObjectOutputStream (fos);
+			    			KV kv = new KV();
+							
+			    			while ((kv = (KV) mKV.reception(ss)) != null) {
+			    				oos.writeObject(kv);
+			    			}
+
+			    			oos.close();
+			    			fos.close();
+							break;
+					}
+					
+					
+					
 					break;
 				case CMD_DELETE:
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)

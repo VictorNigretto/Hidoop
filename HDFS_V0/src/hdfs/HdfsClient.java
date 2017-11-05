@@ -17,6 +17,7 @@ import util.Message;
 
 import formats.Format;
 import formats.Format.Commande;
+import formats.Format.Type;
 import formats.KV;
 import formats.FormatLine;
 
@@ -44,25 +45,30 @@ public class HdfsClient {
     	try { 
     	Message<String> mString = new Message<String>();
 		Message<Commande> mCMD = new Message<Commande>();
-		Message<File> mFile = new Message<File>();
+		Message<Type> mType = new Message<Type>();
+		Message<KV> mKV = new Message<KV>();
 		
     	File fichier = new File(localFSSourceFname);
 		
 		int nbServer = servers.length;
+		int quotient;
+		int reste;
 		
-    	if (fmt == Format.Type.LINE) {			
+		//faire un switch
+		switch (fmt) {
+			case LINE:
     			FileReader fr = new FileReader(fichier);
     			BufferedReader br = new BufferedReader(fr);
     			
     			//Lire ligne par ligne et compter
-    			int indLine = 1; 			
+    			int indLine = 1;
     			while (br .readLine() != null) {
     				indLine++;
-    			}
+    			}	
     			int nbLine = indLine - 1;
 
-    			int quotient = nbLine/nbServer;
-    			int reste = nbLine%nbServer;
+    			quotient = nbLine/nbServer;
+    			reste = nbLine%nbServer;
     			
     			br.close();
     			fr.close();
@@ -70,6 +76,7 @@ public class HdfsClient {
     			br = new BufferedReader(fr);
     			
     			// Envoyer à chaque serveur, un fragment du fichier
+    			// Atention si fragFile null ????
     			for (int i=0 ; i<nbServer ; i++) {
     				int nbLineSent = quotient;
     				if (reste != 0) {
@@ -84,57 +91,52 @@ public class HdfsClient {
     				
     				mCMD.send(Commande.CMD_WRITE, servers[i]);
     				mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+    				
+    				mType.send(fmt, servers[i]);
+    				
+    				// envoyer String ou File ???
     				mString.send(fragFile, servers[i]);
     			}
     			br.close();
     			fr.close();	
-    		} else if (fmt == Format.Type.KV) {
+    			break;
+			case KV:
     			//Lire KV par KV et compter
     			int indKV = 1;
     			
     			FileInputStream fis = new FileInputStream (localFSSourceFname);
     			ObjectInputStream ois = new ObjectInputStream (fis);
-    			while (ois.readObject() != null) {
-    				indKV++;
-    			}
+    			while (fis.available() != 0){
+    				ois.readObject();
+	    			indKV++;
+    			}	
     			ois.close();
+    			fis.close();
     			int nbKV = indKV - 1;
     			
-    			int quotient = nbKV/nbServer;
-    			int reste = nbKV%nbServer;
+    			quotient = nbKV/nbServer;
+    			reste = nbKV%nbServer;
     			
-    			ois.close();
+    			fis = new FileInputStream (localFSSourceFname);
     			ois = new ObjectInputStream (fis);
-    			
-    			
     			
     			// Envoyer à chaque serveur, un fragment du fichier
     			for (int i=0 ; i<nbServer ; i++) {
-    				ArrayList<KV> KVlist = new ArrayList<KV>();
     				int nbKVSent = quotient;
     				if (reste != 0) {
     					nbKVSent++;
+    					reste--;
     				}
 
-    				for (int j = 0 ; j<nbKVSent ; j++) {
-    					KVlist.add((KV) ois.readObject());
-    				}
-    				
-    				ois.close();
-    				File fileSent = new File("fileSent");
-    				FileOutputStream fos = new FileOutputStream ("fileSent");
-    				ObjectOutputStream oos = new ObjectOutputStream(fos);
-    				oos.writeObject(KVlist);
-    				oos.close();
-    				fos.close();
-    				
-    				
     				mCMD.send(Commande.CMD_WRITE, servers[i]);
-    				mString.send(fichier.getName(), servers[i]);
-    				mFile.send(fileSent, servers[i]);
-
-    			}
-    			
+    				mString.send(fichier.getName() + String.valueOf(i), servers[i]);  				
+    				mType.send(fmt, servers[i]);
+    				
+    				for (int j = 0 ; j<nbKVSent ; j++) {				
+    					mKV.send((KV)ois.readObject(),servers[i]);
+    				}
+    				mKV.send(null,servers[i]);
+    			} 			
     			ois.close();
     			fis.close();
     		}
@@ -154,26 +156,52 @@ public class HdfsClient {
     public static void HdfsRead(String hdfsFname, String localFSDestFname) {
     	Message<String> mString = new Message<String>();
     	Message<Commande> mCMD = new Message<Commande>();
-    	String content = "";
-    	for (int i = 0 ; i < servers.length ; i++) {
-    		mCMD.send(Commande.CMD_READ, servers[i]);
-    		mString.send(hdfsFname + String.valueOf(i), servers[i]);
-    		
-    		if (i == servers.length-1) {
-    			content = content + mString.reception(servers[i]);
-    		} else {
-    			content = content + mString.reception(servers[i]) + "\n";
-    		}
-    	}
-    	File file = new File(localFSDestFname);
+    	Message<Type> mType = new Message<Type>();
+    	Message<KV> mKV = new Message<KV>();
+    	File file = new File(hdfsFname + "-res");
+    	
     	try {
-			FileWriter fw = new FileWriter(file);
-			fw.write(content);
-			fw.close();
+  	  	
+	    	for (int i = 0 ; i < servers.length ; i++) {
+	    		
+	    		mCMD.send(Commande.CMD_READ, servers[i]);
+	    		mString.send(hdfsFname + String.valueOf(i), servers[i]);
+	    		Type fmt = mType.reception(servers[i]);
+	    		
+	    		switch (fmt) {
+		    		case LINE:
+		    			String content = ""; 
+			    		if (i == servers.length-1) {
+			    	    	content = content + mString.reception(servers[i]);
+			    	    } else {
+			    	    	content = content + mString.reception(servers[i]) + "\n";
+			    	    }
+			    		FileWriter fw = new FileWriter(file,true);
+						fw.write(content);
+						fw.close();
+			    	break;
+		    		case KV:
+		    			FileOutputStream fos = new FileOutputStream (file,true);
+		    			ObjectOutputStream oos = new ObjectOutputStream (fos); 
+		    			KV kv = new KV();
+			    		while ((kv = (KV) mKV.reception(servers[i])) != null) {
+							oos.writeObject(kv);
+						}
+			    		oos.close();
+				    	fos.close();
+		    		break;
+	    		}
+	    	} 	
+
+    	} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	
+    	
     }
 
 	
@@ -184,7 +212,7 @@ public class HdfsClient {
             if (args.length<2) {usage(); return;}
 
             switch (args[0]) {
-              case "read": HdfsRead(args[1],"testRead.txt"); break;
+              case "read": HdfsRead(args[1],null); break;
               case "delete": HdfsDelete(args[1]); break;
               case "write": 
                 Format.Type fmt;
