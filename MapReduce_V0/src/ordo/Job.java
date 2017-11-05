@@ -90,7 +90,7 @@ public class Job implements JobInterface {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
-				demons.add((Daemon) Naming.lookup("//" + machines.get(i) + "/daemon"));
+				demons.add((Daemon) Naming.lookup("//localhost/" + machines.get(i)));
 				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -234,8 +234,8 @@ public class Job implements JobInterface {
 
     public void initMachines(){
     	this.machines = new ArrayList<String>();
-    		machines.add("dragon.enseeiht.fr");
-    		machines.add("salameche.enseeiht.fr");
-    		machines.add("bulbizarre.enseeiht.fr");
+    		machines.add("succube");
+    		machines.add("lucifer");
+    		machines.add("cthun");
 	}
 }

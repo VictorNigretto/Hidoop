@@ -51,6 +51,7 @@ public class MyMapReduce implements MapReduce {
 	
 	// Avec un paramètre : le nom du fichier !
 	public static void main(String args[]) {
+		System.out.println("Hey !!!!!!!!!!!!!!!!!!!!!!!!!!");
 		// On crée un Job
 		// Qu'est-ce qu'un Job ?
 		// C'est l'application qui va s'occuper de lancer tous les maps

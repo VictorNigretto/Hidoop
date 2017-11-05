@@ -42,10 +42,10 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	// Le premier paramètre sera le nom du démon
 	public static void main(String args[]) {
 		try {
-			Daemon d = new DaemonImpl("daemon");
+			Daemon d = new DaemonImpl(args[0]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
             String nomMachine = InetAddress.getLocalHost().getHostName();
-            Naming.rebind("//" + nomMachine + ".enseeiht.fr/" + ((DaemonImpl) d).getName(), d);
+            Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
