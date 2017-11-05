@@ -15,8 +15,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import static hdfs.HdfsClient.HdfsRead;
 
-public class Job extends UnicastRemoteObject implements JobInterface, CallBack  {
+
+public class Job implements JobInterface {
 	
 	/*****************************************
 	Attributs
@@ -29,8 +31,9 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 	private String inputFName;
 	private String outputFName;
 	private SortComparator sortComparator;
+	private Format.Type interFormat;
+	private String interFName;
 
-	private Semaphore nbMapsFinished;
 
 	/*****************************************
 	Constructeurs
@@ -38,30 +41,25 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
-	public Job() throws RemoteException {
-		super();
+	public Job() {
 		this.numberOfMaps = 10; //TODO
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
-
-        this.nbMapsFinished = new Semaphore(0);
 	}
 
 	// On peut aussi ajouter directement l'input
 	// L'output étant à remplir par l'utilisateur
-	public Job(Format.Type inputFormat, String inputFName) throws RemoteException{
+	public Job(Format.Type inputFormat, String inputFName) {
 		this();
 		this.inputFormat = inputFormat;
 		this.inputFName = inputFName;
+
+		this.outputFName = inputFName + "-res";
+		this.interFName = inputFName + "-inter";
+		this.outputFormat = inputFormat;
+		this.interFormat = inputFormat;
 	}
 
-	// Et on peut aussi tout spécifier
-	public Job(Format.Type inputFormat, Format.Type outputFormat, String inputFName, String outputFName) throws RemoteException{
-		this(inputFormat, inputFName);
-		this.outputFormat = outputFormat;
-		this.outputFName = outputFName;
-	}
-	
 	/*****************************************
 	Start Job (méthode principale)
 	*****************************************/
@@ -72,57 +70,73 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
-		// Créons le format d'input
-		Format input;
+		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
+		Format input, inter, output;
         if(inputFormat == Format.Type.LINE) { // LINE
-			input = new FormatLineLocal(inputFName);
+			input = new FormatLine(inputFName, Format.Type.LINE);
+			inter = new FormatLine(interFName, Format.Type.LINE);
+			output = new FormatLine(outputFName, Format.Type.LINE);
 		} else { // KV
-			input = new FormatKVLocal(inputFName);
+			input = new FormatKV(inputFName, Format.Type.KV);
+			inter = new FormatKV(interFName, Format.Type.KV);
+			output = new FormatKV(outputFName, Format.Type.KV);
 		}
-		// Et celui d'output
-		Format output = new FormatLineLocal(outputFName);
 
-    	// récupérer les chunks du fichier x)
-    	// Ils se trouvent sur les Daemons ! Comment-est-ce que j'y ai accès ?
-    	List<Daemon> demons = new ArrayList<Daemon>();
-        List<Format> formatMapResultats = new ArrayList<>(); // là où l'on va écrire les résultats des maps
+    	// récupérer la liste des démons sur l'annuaire
+    	List<Daemon> demons = new ArrayList<>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
-				demons.add((Daemon) Naming.lookup("//localhost/premierDaemon")); // TODO
-				// initialiser les formats
-				formatMapResultats.add(new FormatKVLocal());
+				// TODO => généraliser à plusieurs démons sur plusieurs machines
+				demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
     	}
 
-    	// Puis on va lancer les maps sur les différents démons
-        for(int i = 0; i < this.numberOfMaps; i++) {
-        	Daemon d = demons.get(i);
-        	Format res = formatMapResultats.get(i);
+    	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+		CallBack cb = null;
+		try {
+			cb = new CallBackImpl();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		// Puis on va lancer les maps sur les différents démons
+		for(Daemon d : demons) {
 			try {
-				d.runMap(mr, input, res, this);
+				// on appelle le map sur le démon
+				// on utilise le même format input et le même format output pour chacun
+				// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
+				// sur les différents démons, que s'effectuera le chargement des différents chunks
+				d.runMap(mr, input, inter, cb);
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
 		}
 
 		// Puis on attends que tous les démons aient finis leur travail
-        for(int i = 0; i < numberOfMaps; i++) {
-			try {
-				nbMapsFinished.acquire();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		try {
+			cb.waitFinishedMap(numberOfMaps);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
-		// On utilise HDFS
-
-		// Puis on applique le reduce sur tous les résultats des maps
-        for(Format res : formatMapResultats) {
-    		mr.reduce(res, output);
+		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
+		Format resReduce;
+		if(inputFormat == Format.Type.LINE) {
+			resReduce = new FormatLine("resReduceFormat", Format.Type.LINE);
+		} else {
+			resReduce = new FormatKV("resReduceFormat", Format.Type.KV);
 		}
+		HdfsRead(inter.getFname(), resReduce.getFname());
+
+    	// On veut transformer ce fichier en un format local
+        output.open(Format.OpenMode.R);
+
+		// Puis on applique le reduce sur le résultat concaténé des maps
+		// On stock le résultat dans l'output
+		mr.reduce(resReduce, output);
 
 		// On extrait une liste de notre format output pour pouvoir le trier
 		List<KV> listeTriee = new ArrayList<>();
@@ -152,10 +166,6 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
 	Méthodes auxiliares
 	*****************************************/
 
-	// Permet à un démons de confier qu'il a bien terminé son traitement de map
-	public void confirmFinishedMap() throws InterruptedException {
-		nbMapsFinished.release();
-	}
 
     public void setNumberOfReduces(int tasks){
     	this.numberOfReduces = tasks;
@@ -167,6 +177,8 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
     
     public void setInputFormat(Format.Type ft){
     	this.inputFormat = ft;
+		this.outputFormat = inputFormat;
+		this.interFormat = inputFormat;
     }
     
     public void setOutputFormat(Format.Type ft){
@@ -175,6 +187,8 @@ public class Job extends UnicastRemoteObject implements JobInterface, CallBack  
     
     public void setInputFname(String fname){
     	this.inputFName = fname;
+    	this.outputFName = fname + "-res";
+		this.interFName = fname + "-inter";
     }
     
     public void setOutputFname(String fname){

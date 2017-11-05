@@ -21,7 +21,14 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
     // On appelle le map fourni en paramètre sur le reader et on écrit sur le writer
 	// Quand on a finit, on appelle le callback pour l'informer
 	public void runMap(Mapper m, Format reader, Format writer, CallBack cb) throws RemoteException {
+		// On ouvre le formats sur le démons, pour récupérer les chunks
+		reader.open(Format.OpenMode.R);
+		writer.open(Format.OpenMode.W);
+
 		m.map(reader, writer);
+
+		reader.close();
+		writer.close();
 		try {
 			cb.confirmFinishedMap();
 		} catch (InterruptedException e) {
