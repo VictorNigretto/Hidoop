@@ -22,25 +22,33 @@ import java.util.Iterator;
 import static formats.Format.Commande.CMD_DELETE;
 
 
-public class HdfsServer {	
+public class HdfsServer {
 
+	private static String fname;
+	private static String fragFile;
 	private static File file;
-	private static Type fmt;
-	
-	public static void main (String[] args) throws IOException {
-		
+
+	public static void main(String[] args) throws IOException {
+
 		int port = Integer.parseInt(args[0]);
-		
+		//port = 6666; // pour tester, a enlever
+
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
-		Message<Type> mType = new Message<Type>();
-		Message<KV> mKV = new Message<KV>();
+		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
+
+		//Pour tester
+		/*file = new File ("test.txt");
+		FileReader frr = new FileReader(file);
+		char[] buff = new char[(int) file.length()];
+		frr.read(buff);
+		fragFile = new String(buff);
+		frr.close();*/
 
 		ServerSocket ss;
+
 		ss = new ServerSocket(port);
 		System.out.println("Serveur démarré :)");
-		String fname;
-
 		while (true) {
 			// Récupérer la commande demandé
 			Commande cmd = (Commande) mCMD.reception(ss);
@@ -49,14 +57,14 @@ public class HdfsServer {
 				case CMD_OPEN_R:
 					// Envoyer le path fragFile
 					// Gérer plusieusrs fichiers
-					System.out.print("Demande d'ouverture en lecture reçue ...");
+					System.out.print(" Demande d'ouverture en lecture reçue ...");
 					mString.send(file.getAbsolutePath(), ss);
 					System.out.println("fichier ouvert en lecture");
 					break;
 				case CMD_OPEN_W:
 					// Envoyer le path fragFile
 					// Gérer plusieurs fichiers
-					System.out.print("Demande d'ouverture en écriture reçue ...");
+					System.out.print(" Demande d'ouverture en écriture reçue ...");
 
 					fname = mString.reception(ss);
 					File fileRes = new File(fname + "-res");
@@ -67,39 +75,21 @@ public class HdfsServer {
 				case CMD_CLOSE:
 					break;
 				case CMD_READ:
-					System.out.print("Demande de lecture reçue ...");
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
-					fname = mString.reception(ss);
-					file = new File(fname);
-					mType.send(fmt, ss);
-					FileInputStream fis = new FileInputStream(file);
-					// associé format au fichier
-					switch (fmt) {
-						case LINE:
-							byte[] buf = new byte[(int) file.length()];
-							fis.read(buf);
-							fis.close();
-							mString.send(new String(buf),ss);
-							break;
-						case KV:
-							ObjectInputStream ois = new ObjectInputStream(fis);				
-							while (fis.available() > 0) {
-								try {
-									mKV.send((KV) ois.readObject(), ss);
-								} catch (ClassNotFoundException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							}
-							mKV.send(null, ss);			
-							ois.close();
-							break;
-					}
+					System.out.print(" Demande de lecture reçue ...");
+
+					String ffname = mString.reception(ss);
+					
+					/*FileReader fr = new FileReader(file);
+					char[] buf = new char[(int) file.length()];
+					fr.read(buf);
+					mString.send(new String(buf),ss);*/
+					mString.send(fragFile, ss);
 					System.out.println("fragment du fichier envoyé");
-					fis.close();	
+
 					break;
 				case CMD_WRITE:
-					System.out.print("Demande d'écriture reçue ...");
+					System.out.print(" Demande d'écriture reçue ...");
 
 					// Recuperer write Hdfs Client
 
@@ -108,39 +98,29 @@ public class HdfsServer {
 					fname = mString.reception(ss);
 					file = new File(fname);
 					//file.createNewFile();
-					
-					fmt = mType.reception(ss);
-					switch (fmt) {
-						case LINE:
-							String fragFile = (String) mString.reception(ss);
-							// Ecrire son contenu dans le fichier
-							FileWriter fw = new FileWriter(file);
-							fw.write(fragFile);
-							fw.close();
-							break;
-						case KV:
-			    			FileOutputStream fos = new FileOutputStream (file,true);
-			    			ObjectOutputStream oos = new ObjectOutputStream (fos);
-			    			KV kv = new KV();
-							
-			    			while ((kv = (KV) mKV.reception(ss)) != null) {
-			    				oos.writeObject(kv);
-			    			}
-
-			    			oos.close();
-			    			fos.close();
-							break;
+					// Reception de la liste
+					ArrayList<Object> listreceived = mList.reception(ss);
+					// Ecrire son contenu dans le fichier
+					System.out.println(listreceived.toString());
+					FileOutputStream fos = new FileOutputStream(file);
+					ObjectOutputStream oos = new ObjectOutputStream(fos);
+					Iterator<Object> it = listreceived.iterator();
+					//tant qu'il y a des objets dans la liste on les écrit dans le fichier
+					while (it.hasNext()) {
+						oos.writeObject(it.next());
 					}
+					oos.close();
+					fos.close();
 					System.out.println("fragment du fichier enregistré");
 					break;
+
+
 				case CMD_DELETE:
-					System.out.print("Demande de suppression reçue ...");
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
-					fname = mString.reception(ss);
-					File f = new File(fname);
-					f.delete();
+					System.out.print("Demande de suppression reçue ...");
+					file.delete();
 					System.out.println("fichier supprimé");
-					break;
+
 				default:
 					break;
 
