@@ -11,6 +11,7 @@ import formats.FormatReader;
 import formats.FormatWriter;
 import formats.KV;
 
+// Compte le nombre d'occurences de chaques mots d'un fichier stocké en HDFS
 public class MyMapReduce implements MapReduce {
 	// Je ne sais pas à quoi ça sert
 	private static final long serialVersionUID = 1L;
@@ -50,6 +51,7 @@ public class MyMapReduce implements MapReduce {
 	
 	// Avec un paramètre : le nom du fichier !
 	public static void main(String args[]) {
+		System.out.println("Hey !!!!!!!!!!!!!!!!!!!!!!!!!!");
 		// On crée un Job
 		// Qu'est-ce qu'un Job ?
 		// C'est l'application qui va s'occuper de lancer tous les maps

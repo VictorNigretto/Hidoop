@@ -1,8 +1,6 @@
 package formats;
 
-
 import util.Message;
-
 
 import java.io.*;
 
@@ -143,6 +141,5 @@ public class FormatKV implements Format{
         }
 
     }
-
 
 

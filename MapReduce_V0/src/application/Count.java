@@ -14,6 +14,7 @@ import java.util.StringTokenizer;
 import config.Project; // TODO ==> groupe Alexys/Marie
 import formats.KV;
 
+// Fait la même chose que MyMapReduce mais sur un fichier local
 public class Count {
 
 	// Il faut lancer le main avec un argument

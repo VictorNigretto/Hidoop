@@ -16,9 +16,13 @@ import formats.Format.Commande;
 import formats.Format.Type;
 import formats.KV;
 import util.Message;
+import java.util.ArrayList;
+import java.util.Iterator;
 
-public class HdfsServer {
-	
+import static formats.Format.Commande.CMD_DELETE;
+
+
+public class HdfsServer {	
 
 	private static File file;
 	private static Type fmt;
@@ -34,7 +38,9 @@ public class HdfsServer {
 
 		ServerSocket ss;
 		ss = new ServerSocket(port);
+		System.out.println("Serveur démarré :)");
 		String fname;
+
 		while (true) {
 			// Récupérer la commande demandé
 			Commande cmd = (Commande) mCMD.reception(ss);
@@ -42,23 +48,32 @@ public class HdfsServer {
 			switch (cmd) {
 				case CMD_OPEN_R:
 					// Envoyer le path fragFile
-					// Gérer plusieus fichiers
+					// Gérer plusieusrs fichiers
+					System.out.print("Demande d'ouverture en lecture reçue ...");
 					mString.send(file.getAbsolutePath(), ss);
+					System.out.println("fichier ouvert en lecture");
 					break;
 				case CMD_OPEN_W:
 					// Envoyer le path fragFile
 					// Gérer plusieurs fichiers
+					System.out.print("Demande d'ouverture en écriture reçue ...");
+
 					fname = mString.reception(ss);
 					File fileRes = new File(fname + "-res");
 					mString.send(fileRes.getAbsolutePath(), ss);
+					System.out.println("fichier ouvert en écriture");
+
+					break;
+				case CMD_CLOSE:
 					break;
 				case CMD_READ:
+					System.out.print("Demande de lecture reçue ...");
 					// nom utile pour récupèrer le bon fichier si il y en a plusieurs
 					fname = mString.reception(ss);
 					file = new File(fname);
 					mType.send(fmt, ss);
 					FileInputStream fis = new FileInputStream(file);
-					
+					// associé format au fichier
 					switch (fmt) {
 						case LINE:
 							byte[] buf = new byte[(int) file.length()];
@@ -68,7 +83,7 @@ public class HdfsServer {
 							break;
 						case KV:
 							ObjectInputStream ois = new ObjectInputStream(fis);				
-							while (fis.available() != 0) {
+							while (fis.available() > 0) {
 								try {
 									mKV.send((KV) ois.readObject(), ss);
 								} catch (ClassNotFoundException e) {
@@ -80,11 +95,14 @@ public class HdfsServer {
 							ois.close();
 							break;
 					}
+					System.out.println("fragment du fichier envoyé");
 					fis.close();	
 					break;
 				case CMD_WRITE:
+					System.out.print("Demande d'écriture reçue ...");
+
 					// Recuperer write Hdfs Client
-					
+
 					// Modifier pour liste de fichiers,(contenu,non,file)
 					// Creer le fichier lecture en dur
 					fname = mString.reception(ss);
@@ -113,21 +131,22 @@ public class HdfsServer {
 			    			fos.close();
 							break;
 					}
-					
-					
-					
+					System.out.println("fragment du fichier enregistré");
 					break;
 				case CMD_DELETE:
+					System.out.print("Demande de suppression reçue ...");
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
 					fname = mString.reception(ss);
 					File f = new File(fname);
 					f.delete();
+					System.out.println("fichier supprimé");
 					break;
 				default:
 					break;
+
 			}
+
 		}
-		
+
 	}
-	
 }
