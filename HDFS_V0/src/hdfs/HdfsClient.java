@@ -36,8 +36,10 @@ public class HdfsClient {
 		int nbServer = servers.length;
 		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
 		Message<Commande> mCMD = new Message<Commande>();
+		Message<String> mString = new Message<>();
 
 		for (int i = 0; i < nbServer; i++) {
+			mString.send(hdfsFname,servers[i]);
 			mCMD.send(Commande.CMD_DELETE, servers[i]);
 			System.out.println("envoyee au serveur " + i );
 		}
@@ -89,10 +91,10 @@ public class HdfsClient {
 					}
 					String fragFile = "";
 					for (int j = 0 ; j<nbLineSent-1 ; j++) {
-						fragFile = fragFile + br.readLine() + "\n";
+						listS.add(br.readLine());
 					}
-					fragFile = fragFile + br.readLine();
-					listS.add(fragFile);
+
+
 
 					mCMD.send(Commande.CMD_WRITE, servers[i]);
 					System.out.println("envoyée au serveur " + i);

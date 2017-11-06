@@ -135,7 +135,9 @@ public class HdfsServer {
 				case CMD_DELETE:
 					// Supprimer contenu fragFile du serveur ; gérer en lste(remove file)
 					System.out.print("Demande de suppression reçue ...");
-					file.delete();
+					String Fname = mString.reception(ss);
+					File f = new File(Fname);
+					f.delete();
 					System.out.println("fichier supprimé");
 
 				default:
