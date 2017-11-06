@@ -30,8 +30,6 @@ public class FormatLine implements Format {
 	// soit Message m mais attention, ou un par type ???
 	private Message<Commande> mCMD;
 	private Message<String> mString;
-	private Message<Type> mType;
-	private Message<KV> mKV;
 
 	private int port;
 	private long index = 1;
@@ -42,8 +40,6 @@ public class FormatLine implements Format {
 		this.fname = fname;
 		this.mCMD = new Message<Commande>();
 		this.mString = new Message<String>();
-		this.mType = new Message<Type>();
-		this.mKV = new Message<KV>();
 		this.port = port;
 	}
 	
@@ -55,7 +51,7 @@ public class FormatLine implements Format {
 		if (mode == OpenMode.R) {
 			// Récupèrer contenu fichier et le découper en lignes
 			mCMD.send(Commande.CMD_OPEN_R,port);
-			//mString.send(fname,port);		précisez le fichier dont on veut obtenir le path
+			mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
 			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
 			filePath = mString.reception(port);
 			fileRead = new File(filePath);
@@ -115,9 +111,9 @@ public class FormatLine implements Format {
 	@Override
 	public KV read() {
 		// Créer KV index + ligne à index
-		KV kv = null;
+		KV kv = new KV();
 
-		kv =new KV(Integer.toString((int) index), lines.get((int)index));
+		kv =new KV(Integer.toString((int) index), lines.get((int)index - 1));
 		index++;
 
 		return kv;
