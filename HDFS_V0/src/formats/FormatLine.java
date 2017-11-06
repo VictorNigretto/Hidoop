@@ -1,30 +1,31 @@
 package formats;
 
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
 
 import util.Message;
 import formats.Format.OpenMode;
+import formats.Format.Type;
 
 public class FormatLine implements Format {
 	
 // Essayer de factoriser en classe générique classes envoi et reception
 
 	private File fileRead;
-	private FileInputStream fr;
+	private FileInputStream fis;
+	private ObjectInputStream ois;
 	private File fileWrite;
-	private FileOutputStream fw;
+	private FileOutputStream fos;
+	private ObjectOutputStream oos;
 	
 	private boolean OpenR = false;
 	private boolean OpenW = false;
 	
 	private String filePath;
 	
-	private String lines[];
+	private ArrayList<String> lines;
+	private ArrayList<KV> KVs;
 	
 	// soit Message m mais attention, ou un par type ???
 	private Message<Commande> mCMD;
@@ -32,22 +33,21 @@ public class FormatLine implements Format {
 	private Message<Type> mType;
 	private Message<KV> mKV;
 
-	private int port = 6666;
+	private int port;
 	private long index = 1;
 	private String fname;	// nom du fichier
-	private Type type;		// type du format
-	
-	public FormatLine(String fname, Type type) {
+
+	public FormatLine(String fname, int port) {
 		// Mettre le port en  parametre
 		this.fname = fname;
-		this.type = type;
 		this.mCMD = new Message<Commande>();
 		this.mString = new Message<String>();
 		this.mType = new Message<Type>();
 		this.mKV = new Message<KV>();
+		this.port = port;
 	}
 	
-	public void open(OpenMode mode) {
+	public void open(OpenMode mode)  {
 		try {
 			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
 			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
@@ -59,12 +59,13 @@ public class FormatLine implements Format {
 			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
 			filePath = mString.reception(port);
 			fileRead = new File(filePath);
-			fr = new FileInputStream(fileRead);
+			fis = new FileInputStream(fileRead);
+			ois = new ObjectInputStream(fis);
+			Type fmt = (Type) ois.readObject();
+			lines = (ArrayList<String>)ois.readObject();
+
 			OpenR = true;
-			byte[] buf = new byte[(int) fileRead.length()];
-			fr.read(buf);
-			String fileContent = new String(buf);
-   			lines = fileContent.split("\n");	
+
 			}
 		if (mode == OpenMode.W) {
 			// Créer le fichier résultat dans format ou serveur?
@@ -72,14 +73,22 @@ public class FormatLine implements Format {
 			mString.send(fname,port);
 			filePath = mString.reception(port);
 			fileWrite = new File(filePath);
-			fw = new FileOutputStream(fileWrite,true);
+			fos = new FileOutputStream(fileWrite,true);
+			oos = new ObjectOutputStream(fos);
 			OpenW = true;
+
+			KVs = new ArrayList<KV>();
+			oos.writeObject(Type.KV);
+
+			OpenR = true;
 		}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -88,11 +97,14 @@ public class FormatLine implements Format {
 		//mCMD.send(Commande.CMD_CLOSE,port);
 		// fermer sock normalement je pense ou descripteurs
 		try {
-			if (OpenR) {	
-				fr.close();
+			if (OpenR) {
+				ois.close();
+				fis.close();
 			}
-			if (OpenW) {	
-				fw.close();
+			if (OpenW) {
+				oos.writeObject(KVs);
+				oos.close();
+				fos.close();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -103,19 +115,18 @@ public class FormatLine implements Format {
 	@Override
 	public KV read() {
 		// Créer KV index + ligne à index
-		KV kv = new KV(String.valueOf(index),lines[(int)index-1]);
+		KV kv = null;
+
+		kv =new KV(Integer.toString((int) index), lines.get((int)index));
 		index++;
+
 		return kv;
 	}
 
 	@Override
 	public void write(KV record) {
-		try {
-			fw.write((record.k + KV.SEPARATOR + record.v + "\n").getBytes());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		KVs.add(record);
+
 	}
 
 	@Override

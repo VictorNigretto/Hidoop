@@ -5,23 +5,27 @@ import util.Message;
 
 
 import java.io.*;
+import java.util.ArrayList;
 
 public class FormatKV implements Format{
 
 
 // Essayer de factoriser en classe générique classes envoi et reception
 
-        private File fileRead;
-        private FileInputStream fr;
-        private File fileWrite;
-        private FileOutputStream fw;
+    private File fileRead;
+    private FileInputStream fis;
+    private ObjectInputStream ois;
+    private File fileWrite;
+    private FileOutputStream fos;
+    private ObjectOutputStream oos;
 
-        private boolean OpenR = false;
-        private boolean OpenW = false;
+    private boolean OpenR = false;
+    private boolean OpenW = false;
 
-        private String filePath;
+    private String filePath;
 
-        private KV kvs[];
+    private ArrayList<KV> KVstoRead;
+    private ArrayList<KV> KVstoWrite;
 
         // soit Message m mais attention, ou un par type ???
         private Message<Commande> mCMD;
@@ -57,15 +61,10 @@ public class FormatKV implements Format{
                     //  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
                     filePath = mString.reception(port);
                     fileRead = new File(filePath);
-                    fr = new FileInputStream(fileRead);
-                    OpenR = true;
-                    ObjectInputStream ois = new ObjectInputStream(fr);
-                    int i = fr.available();
-                    while (fr.available() > 0) {
-                        kvs[i - 1] = (KV) ois.readObject();
-                        i--;
-                    }
-                    ois.close();
+                    fis = new FileInputStream(fileRead);
+                    ois = new ObjectInputStream(fis);
+                    Type fmt = (Type) ois.readObject();
+                    KVstoRead = (ArrayList<KV>) ois.readObject();
 
 
                 }
@@ -75,8 +74,12 @@ public class FormatKV implements Format{
                     mString.send(fname, port);
                     filePath = mString.reception(port);
                     fileWrite = new File(filePath);
-                    fw = new FileOutputStream(fileWrite, true);
+                    fos = new FileOutputStream(fileWrite,true);
+                    oos = new ObjectOutputStream(fos);
                     OpenW = true;
+
+                    KVstoWrite = new ArrayList<KV>();
+                    oos.writeObject(Type.KV);                    OpenW = true;
                 }
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
@@ -94,11 +97,13 @@ public class FormatKV implements Format{
             // fermer sock normalement je pense ou descripteurs
             try {
                 if (OpenR) {
-                    fr.close();
+                    ois.close();
+                    fis.close();
                 }
                 if (OpenW) {
-                    fw.close();
-                }
+                    oos.writeObject(KVstoRead);
+                    oos.close();
+                    fos.close();                }
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -110,19 +115,12 @@ public class FormatKV implements Format{
             // Créer KV index + ligne à index
 
             index++;
-            return kvs[(int)index];
+            return KVstoRead.get((int)index);
         }
 
         @Override
         public void write(KV record) {
-            try {
-                ObjectOutputStream oos = new ObjectOutputStream(fw);
-                oos.writeObject(record);
-
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            KVstoWrite.add(record);
         }
 
         @Override
