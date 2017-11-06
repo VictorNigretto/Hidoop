@@ -36,6 +36,8 @@ public class HdfsServer {
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<String>();
 		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
+		Message<Type> mType = new Message<Type>();
+
 
 		//Pour tester
 		/*file = new File ("test.txt");
@@ -79,13 +81,27 @@ public class HdfsServer {
 					System.out.print(" Demande de lecture reçue ...");
 
 					String ffname = mString.reception(ss);
-					
+
+					FileInputStream fis = new FileInputStream (ffname);
+					ObjectInputStream ois = new ObjectInputStream (fis);
+					try {
+						Type fmt = (Type) ois.readObject();
+						ArrayList<Object> listToSend = (ArrayList<Object>) ois.readObject();
+						mType.send(fmt,ss);
+						mList.send(listToSend,ss);
+						System.out.println("fragment du fichier envoyé");
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
+
 					/*FileReader fr = new FileReader(file);
 					char[] buf = new char[(int) file.length()];
 					fr.read(buf);
 					mString.send(new String(buf),ss);*/
-					mString.send(fragFile, ss);
-					System.out.println("fragment du fichier envoyé");
+
+
+
+
 
 					break;
 				case CMD_WRITE:
@@ -97,6 +113,8 @@ public class HdfsServer {
 					// Creer le fichier lecture en dur
 					fname = mString.reception(ss);
 					file = new File(fname);
+
+					Type fmt = mType.reception(ss);
 					//file.createNewFile();
 					// Reception de la liste
 					ArrayList<Object> listreceived = mList.reception(ss);
@@ -104,11 +122,10 @@ public class HdfsServer {
 					System.out.println(listreceived.toString());
 					FileOutputStream fos = new FileOutputStream(file);
 					ObjectOutputStream oos = new ObjectOutputStream(fos);
-					Iterator<Object> it = listreceived.iterator();
-					//tant qu'il y a des objets dans la liste on les écrit dans le fichier
-					while (it.hasNext()) {
-						oos.writeObject(it.next());
-					}
+					oos.writeObject(fmt);
+					oos.writeObject(listreceived);
+
+
 					oos.close();
 					fos.close();
 					System.out.println("fragment du fichier enregistré");
