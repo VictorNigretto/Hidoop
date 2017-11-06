@@ -39,8 +39,9 @@ public class HdfsClient {
 		Message<String> mString = new Message<>();
 
 		for (int i = 0; i < nbServer; i++) {
-			mString.send(hdfsFname,servers[i]);
+			
 			mCMD.send(Commande.CMD_DELETE, servers[i]);
+			mString.send(hdfsFname  + String.valueOf(i),servers[i]);
 			System.out.println("envoyee au serveur " + i );
 		}
 
@@ -61,7 +62,7 @@ public class HdfsClient {
 
 			if (fmt == Format.Type.LINE) {
 				Message <ArrayList<String>> mStringlist = new Message<ArrayList<String>>();
-				ArrayList<String> listS = new ArrayList<String>();
+				
 				System.out.println("Demande d'écriture d'un fichier (LINE)...");
 
 				FileReader fr = new FileReader(fichier);
@@ -84,13 +85,14 @@ public class HdfsClient {
 
 				// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de String contenant une seule String
 				for (int i=0 ; i<nbServer ; i++) {
+					ArrayList<String> listS = new ArrayList<String>();
 					int nbLineSent = quotient;
 					if (reste != 0) {
 						nbLineSent++;
 						reste--;
 					}
 					String fragFile = "";
-					for (int j = 0 ; j<nbLineSent-1 ; j++) {
+					for (int j = 0 ; j<nbLineSent ; j++) {
 						listS.add(br.readLine());
 					}
 
@@ -98,8 +100,8 @@ public class HdfsClient {
 
 					mCMD.send(Commande.CMD_WRITE, servers[i]);
 					System.out.println("envoyée au serveur " + i);
-					mType.send(Type.LINE, servers[i]);
 					mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+					mType.send(Type.LINE, servers[i]);
 					mStringlist.send(listS, servers[i]);
 					System.out.println("fragment envoyé au serveur " + i);
 				}
@@ -160,9 +162,8 @@ public class HdfsClient {
 
 						mCMD.send(Commande.CMD_WRITE, servers[i]);
 						System.out.println("envoyée au serveur " + i);
-						mType.send(Type.KV, servers[i]);
-
 						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
+						mType.send(Type.KV, servers[i]);
 						mKVlist.send(KVlist, servers[i]);
 						System.out.println("fragment envoyé au serveur " + i);
 
@@ -193,9 +194,7 @@ public class HdfsClient {
 		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
 		File file = new File(localFSDestFname);
 		try {
-			FileOutputStream fos = new FileOutputStream(file, true);
-			ObjectOutputStream oos = new ObjectOutputStream(fos);
-
+			
 
 			for (int i = 0; i < servers.length; i++) {
 				mCMD.send(Commande.CMD_READ, servers[i]);
@@ -209,11 +208,17 @@ public class HdfsClient {
 
 					switch (fmt) {
 						case LINE:
-							oos.writeChars(o.toString());
-
+							FileWriter fw = new FileWriter(file,true);
+							fw.write(o.toString() + "\n");				
+							fw.close();						
 							break;
 						case KV:
+							FileOutputStream fos = new FileOutputStream(file, true);
+							ObjectOutputStream oos = new ObjectOutputStream(fos);
+
 							oos.writeObject(o);
+							oos.close();
+							fos.close();
 							break;
 						default:
 							break;
@@ -231,8 +236,7 @@ public class HdfsClient {
 
 			}
 			System.out.print("Ecriture des données dans un fichier local ...");
-			oos.close();
-			fos.close();
+			
 			System.out.println("données écrites");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
