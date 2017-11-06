@@ -38,23 +38,18 @@ public class HdfsClient {
 		Message<Commande> mCMD = new Message<Commande>();
 		Message<String> mString = new Message<>();
 
-		for (int i = 0; i < nbServer; i++) {
-			
+		for (int i = 0; i < nbServer; i++) {	
 			mCMD.send(Commande.CMD_DELETE, servers[i]);
 			mString.send(hdfsFname  + String.valueOf(i),servers[i]);
 			System.out.println("envoyee au serveur " + i );
 		}
-
 	}
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
-
     		Message<String> mString = new Message<String>();
 			Message<Commande> mCMD = new Message<Commande>();
-			Message<File> mFile = new Message<File>();
 			Message<Type> mType = new Message<Type>();
-
 
 			File fichier = new File(localFSSourceFname);
 
@@ -91,12 +86,9 @@ public class HdfsClient {
 						nbLineSent++;
 						reste--;
 					}
-					String fragFile = "";
 					for (int j = 0 ; j<nbLineSent ; j++) {
 						listS.add(br.readLine());
 					}
-
-
 
 					mCMD.send(Commande.CMD_WRITE, servers[i]);
 					System.out.println("envoyée au serveur " + i);
@@ -136,8 +128,6 @@ public class HdfsClient {
 					FileInputStream fis2 = new FileInputStream (localFSSourceFname);
 					ObjectInputStream ois2 = new ObjectInputStream (fis2);
 
-
-
 					// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de KV
 					for (int i=0 ; i<nbServer ; i++) {
 						ArrayList<KV> KVlist = new ArrayList<KV>();
@@ -154,22 +144,13 @@ public class HdfsClient {
 							KVlist.add(newKV);
 
 						}
-
-
-
-
-
-
 						mCMD.send(Commande.CMD_WRITE, servers[i]);
 						System.out.println("envoyée au serveur " + i);
 						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
 						mType.send(Type.KV, servers[i]);
 						mKVlist.send(KVlist, servers[i]);
 						System.out.println("fragment envoyé au serveur " + i);
-
-
 					}
-
 					ois2.close();
 					fis2.close();
 				}
@@ -224,16 +205,6 @@ public class HdfsClient {
 							break;
 					}
 				}
-
-
-				/*if (i == servers.length-1) {
-					content = content + mString.reception(servers[i]);
-				} else {
-					content = content + mString.reception(servers[i]) + "\n";
-				}
-				System.out.println("fragment du serveur " + i + "reçu");
-			}*/
-
 			}
 			System.out.print("Ecriture des données dans un fichier local ...");
 			
@@ -255,7 +226,7 @@ public class HdfsClient {
             if (args.length<2) {usage(); return;}
 
             switch (args[0]) {
-              case "read": HdfsRead(args[1],"testRead.txt"); break;
+              case "read": HdfsRead(args[1],args[2]); break;
               case "delete": HdfsDelete(args[1]); break;
               case "write": 
                 Format.Type fmt;
