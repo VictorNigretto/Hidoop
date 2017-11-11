@@ -30,34 +30,27 @@ public class FormatKV implements Format{
         // soit Message m mais attention, ou un par type ???
         private Message<Commande> mCMD;
         private Message<String> mString;
-        private Message<Type> mType;
-        private Message<KV> mKV;
 
-        private int port = 6666;
+        private int port;
         private long index = 1;
         private String fname;	// nom du fichier
-        private Type type;		// type du format
 
-        public FormatKV(String fname, Type type) {
+        public FormatKV(String fname, int port) {
             // Mettre le port en  parametre
             this.fname = fname;
-            this.type = type;
+            this.port = port;
             this.mCMD = new Message<Commande>();
             this.mString = new Message<String>();
-            this.mType = new Message<Type>();
-            this.mKV = new Message<KV>();
         }
 
         public void open(OpenMode mode) {
 
             try {
-                //pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
-                // Ouvrir pour chaques ecriture/lecture, ou une seule fois?
                 // Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
                 if (mode == OpenMode.R) {
                     // Récupèrer contenu fichier et le découper en lignes
                     mCMD.send(Commande.CMD_OPEN_R, port);
-                    //mString.send(fname,port);		précisez le fichier dont on veut obtenir le path
+                    mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
                     //  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
                     filePath = mString.reception(port);
                     fileRead = new File(filePath);
@@ -79,7 +72,8 @@ public class FormatKV implements Format{
                     OpenW = true;
 
                     KVstoWrite = new ArrayList<KV>();
-                    oos.writeObject(Type.KV);                    OpenW = true;
+                    oos.writeObject(Type.KV);
+                    OpenW = true;
                 }
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
@@ -93,7 +87,6 @@ public class FormatKV implements Format{
         }
 
     public void close() {
-            //mCMD.send(Commande.CMD_CLOSE,port);
             // fermer sock normalement je pense ou descripteurs
             try {
                 if (OpenR) {
@@ -115,7 +108,7 @@ public class FormatKV implements Format{
             // Créer KV index + ligne à index
 
             index++;
-            return KVstoRead.get((int)index);
+            return KVstoRead.get((int)index-1);
         }
 
         @Override
