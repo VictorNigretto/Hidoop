@@ -14,8 +14,11 @@ public class CreateKVfile {
         try {
             FileOutputStream fos = new FileOutputStream(f);
             ObjectOutputStream oos = new ObjectOutputStream(fos);
+
+
             oos.writeObject(kv1);
             oos.writeObject(kv2);
+
             oos.close();
             fos.close();
 
@@ -26,7 +29,6 @@ public class CreateKVfile {
                 KV newkv2 = (KV) ois.readObject();
                 System.out.println(newkv1.toString());
                 System.out.println(newkv2.toString());
-
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
