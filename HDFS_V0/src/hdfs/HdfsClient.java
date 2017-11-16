@@ -56,7 +56,7 @@ public class HdfsClient {
 			int nbServer = servers.length;
 
 			if (fmt == Format.Type.LINE) {
-				Message <ArrayList<String>> mStringlist = new Message<ArrayList<String>>();
+				Message <ArrayList<Object>> mStringlist = new Message<ArrayList<Object>>();
 				
 				System.out.println("Demande d'écriture d'un fichier (LINE)...");
 
@@ -80,7 +80,8 @@ public class HdfsClient {
 
 				// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de String contenant une seule String
 				for (int i=0 ; i<nbServer ; i++) {
-					ArrayList<String> listS = new ArrayList<String>();
+					ArrayList<Object> listS = new ArrayList<Object>();
+					listS.add(fmt);
 					int nbLineSent = quotient;
 					if (reste != 0) {
 						nbLineSent++;
@@ -100,7 +101,7 @@ public class HdfsClient {
 				br.close();
 				fr.close();
 				} else if (fmt == Format.Type.KV) {
-					Message<ArrayList<KV>> mKVlist = new Message<ArrayList<KV>>();
+					Message<ArrayList<Object>> mKVlist = new Message<ArrayList<Object>>();
 
 				//Lire KV par KV et compter
 					System.out.println("Demande d'écriture d'un fichier (KV)...");
@@ -130,7 +131,8 @@ public class HdfsClient {
 
 					// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de KV
 					for (int i=0 ; i<nbServer ; i++) {
-						ArrayList<KV> KVlist = new ArrayList<KV>();
+						ArrayList<Object> KVlist = new ArrayList<Object>();
+						KVlist.add(Type.KV);
 						int nbKVSent = quotient;
 
 						if (reste != 0) {
@@ -181,28 +183,30 @@ public class HdfsClient {
 				mCMD.send(Commande.CMD_READ, servers[i]);
 				System.out.println("envoyée au serveur " + i);
 				mString.send(hdfsFname + String.valueOf(i), servers[i]);
+				System.out.println("fichier écrit " + hdfsFname + String.valueOf(i));
 				Type fmt = mType.reception(servers[i]);
 				ArrayList<Object> listReceived = mList.reception(servers[i]);
 
 				for (Object o : listReceived) {
+					if (! (o instanceof Type)) {
 
+						switch (fmt) {
+							case LINE:
+								FileWriter fw = new FileWriter(file, true);
+								fw.write(o.toString() + "\n");
+								fw.close();
+								break;
+							case KV:
+								FileOutputStream fos = new FileOutputStream(file, true);
+								ObjectOutputStream oos = new ObjectOutputStream(fos);
 
-					switch (fmt) {
-						case LINE:
-							FileWriter fw = new FileWriter(file,true);
-							fw.write(o.toString() + "\n");				
-							fw.close();						
-							break;
-						case KV:
-							FileOutputStream fos = new FileOutputStream(file, true);
-							ObjectOutputStream oos = new ObjectOutputStream(fos);
-
-							oos.writeObject(o);
-							oos.close();
-							fos.close();
-							break;
-						default:
-							break;
+								oos.writeObject(o);
+								oos.close();
+								fos.close();
+								break;
+							default:
+								break;
+						}
 					}
 				}
 			}

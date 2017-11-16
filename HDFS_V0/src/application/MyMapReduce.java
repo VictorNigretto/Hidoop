@@ -4,19 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import formats.*;
 import map.MapReduce;
 import ordo.Job;
-import formats.Format;
-import formats.FormatReader;
-import formats.FormatWriter;
-import formats.KV;
+
 
 public class MyMapReduce implements MapReduce {
 	private static final long serialVersionUID = 1L;
-
+	private static int ind = 0;
 	// MapReduce program that computes word counts
 	public void map(FormatReader reader, FormatWriter writer) {
-		
+
+
+
 		Map<String,Integer> hm = new HashMap<>();
 		KV kv;
 		while ((kv = reader.read()) != null) {
@@ -27,7 +27,10 @@ public class MyMapReduce implements MapReduce {
 				else hm.put(tok, 1);
 			}
 		}
-		for (String k : hm.keySet()) writer.write(new KV(k,hm.get(k).toString()));
+		for (String k : hm.keySet())
+			writer.write(new KV(k,hm.get(k).toString()));
+
+
 	}
 	
 	public void reduce(FormatReader reader, FormatWriter writer) {

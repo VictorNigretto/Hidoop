@@ -1,11 +1,10 @@
-
-		// Puis on va lancer les maps sur les différents démons
-		for(Daemon d : demons) {package ordo;
+package ordo;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 
@@ -20,100 +19,116 @@ import java.util.concurrent.Semaphore;
 import static hdfs.HdfsClient.HdfsRead;
 
 
-			public class Job implements JobInterface {
+public class Job implements JobInterface {
+	
+	/*****************************************
+	Attributs
+	*****************************************/
+	
+	private int numberOfReduces;
+	private int numberOfMaps;
+	private Format.Type inputFormat;
+	private Format.Type outputFormat;
+	private String inputFName;
+	private String outputFName;
+	private SortComparator sortComparator;
+	private Format.Type interFormat;
+	private String interFName;
+	private List<String> machines; //la liste des machines sur lesquelles tournent les démons
 
-				/*****************************************
-				 Attributs
-				 *****************************************/
 
-				private int numberOfReduces;
-				private int numberOfMaps;
-				private Format.Type inputFormat;
-				private Format.Type outputFormat;
-				private String inputFName;
-				private String outputFName;
-				private SortComparator sortComparator;
-				private Format.Type interFormat;
-				private String interFName;
-				private List<String> machines; //la liste des machines sur lesquelles tournent les démons
+	/*****************************************
+	Constructeurs
+	*****************************************/
 
+	// Constructeur vide avec les données minimums
+	// Le reste à étant à remplir par l'utilisateur
+	public Job() {
+		this.initMachines();
+		this.numberOfMaps = machines.size();
+		this.numberOfReduces = 1; //Pour la V0 uniquement
+		this.sortComparator = new SortComparatorLexico(); //TODO
+	}
 
-				/*****************************************
-				 Constructeurs
-				 *****************************************/
+	// On peut aussi ajouter directement l'input
+	// L'output étant à remplir par l'utilisateur
+	public Job(Format.Type inputFormat, String inputFName) {
+		this();
+		this.inputFormat = inputFormat;
+		this.inputFName = inputFName;
 
-				// Constructeur vide avec les données minimums
-				// Le reste à étant à remplir par l'utilisateur
-				public Job() {
-					this.initMachines();
-					this.numberOfMaps = machines.size();
-					this.numberOfReduces = 1; //Pour la V0 uniquement
-					this.sortComparator = new SortComparatorLexico(); //TODO
-				}
+		this.outputFName = inputFName + "-res";
+		this.interFName = inputFName + "-inter";
+		this.outputFormat = inputFormat;
+		this.interFormat = inputFormat;
+	}
 
-				// On peut aussi ajouter directement l'input
-				// L'output étant à remplir par l'utilisateur
-				public Job(Format.Type inputFormat, String inputFName) {
-					this();
-					this.inputFormat = inputFormat;
-					this.inputFName = inputFName;
+	/*****************************************
+	Start Job (méthode principale)
+	*****************************************/
+	
+    public void startJob (MapReduce mr) {
+    	// 0) déterminer où lancer les maps
+        // 1) lancer les maps sur tous les chunks du fichier
+        // 2) les récupérer quand ils ont finis
+        // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
-					this.outputFName = inputFName + "-res";
-					this.interFName = inputFName + "-inter";
-					this.outputFormat = inputFormat;
-					this.interFormat = inputFormat;
-				}
+		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
+		Format input, inter, output;
+        if(inputFormat == Format.Type.LINE) { // LINE
+			input = new FormatLine(inputFName);
+			inter = new FormatKV(interFName);
+			output = new FormatLine(outputFName);
+		} else { // KV
+			input = new FormatKV(inputFName);
+			inter = new FormatKV(interFName);
+			output = new FormatKV(outputFName);
+		}
 
-				/*****************************************
-				 Start Job (méthode principale)
-				 *****************************************/
+    	// récupérer la liste des démons sur l'annuaire
+    	List<Daemon> demons = new ArrayList<>();
+    	for(int i = 0; i < this.numberOfMaps; i++) {
+    		try {
+    		    // On va récupérer les Démons en RMI sur un annuaire
+				// TODO => généraliser à plusieurs démons sur plusieurs machines
+				String nomMachine = InetAddress.getLocalHost().getHostName();
 
-				public void startJob (MapReduce mr) {
-					// 0) déterminer où lancer les maps
-					// 1) lancer les maps sur tous les chunks du fichier
-					// 2) les récupérer quand ils ont finis
-					// 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
+				demons.add((Daemon) Naming.lookup(nomMachine));
+				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
 
-					// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
-					Format input, inter, output;
-					if(inputFormat == Format.Type.LINE) { // LINE
-						input = new FormatLine(inputFName, );
-						inter = new FormatLine(interFName, Format.Type.LINE);
-						output = new FormatLine(outputFName, Format.Type.LINE);
-					} else { // KV
-						input = new FormatKV(inputFName, Format.Type.KV);
-						inter = new FormatKV(interFName, Format.Type.KV);
-						output = new FormatKV(outputFName, Format.Type.KV);
-					}
+    	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+		CallBack cb = null;
+		try {
+			cb = new CallBackImpl();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 
-					// récupérer la liste des démons sur l'annuaire
-					List<Daemon> demons = new ArrayList<>();
-					for(int i = 0; i < this.numberOfMaps; i++) {
-						try {
-							// On va récupérer les Démons en RMI sur un annuaire
-							// TODO => généraliser à plusieurs démons sur plusieurs machines
-							demons.add((Daemon) Naming.lookup("//localhost/" + machines.get(i)));
-							//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-
-					// On initialise le callback pour que les démons puissent renvoyer leurs résultats
-					CallBack cb = null;
-					try {
-						cb = new CallBackImpl();
-					} catch (RemoteException e) {
-						e.printStackTrace();
-					}
-
-					try {
+		// Puis on va lancer les maps sur les différents démons
+		int ind = 0;
+		String nameInput = input.getFname();
+		String nameinter = inter.getFname();
+		for(Daemon d : demons) {
+			try {
 				// on appelle le map sur le démon
 				// on utilise le même format input et le même format output pour chacun
 				// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
 				// sur les différents démons, que s'effectuera le chargement des différents chunks
+
+				/* Fait par Marine */
+				((FormatLine) input).setFname(nameInput + ind);
+				((FormatKV) inter).setFname(nameinter + ind);
+
+				ind ++;
+
 				d.runMap(mr, input, inter, cb);
+
 			} catch (RemoteException e) {
+
 				e.printStackTrace();
 			}
 		}
@@ -121,25 +136,30 @@ import static hdfs.HdfsClient.HdfsRead;
 		// Puis on attends que tous les démons aient finis leur travail
 		try {
 			cb.waitFinishedMap(numberOfMaps);
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
 		Format resReduce;
-		if(inputFormat == Format.Type.LINE) {
-			resReduce = new FormatLine("resReduceFormat", Format.Type.LINE);
+		/* if(inputFormat == Format.Type.LINE) {
+			resReduce = new FormatLine("resReduceFormat");
+			System.out.println(" Ecriture du fichier intermédiaire");
 		} else {
-			resReduce = new FormatKV("resReduceFormat", Format.Type.KV);
-		}
-		HdfsRead(inter.getFname(), resReduce.getFname());
+			resReduce = new FormatKV("resReduceFormat");
+		}*/
+		resReduce = new FormatKV("resReduceFormat");
+		System.out.println("nom du fichier qu'on veut lire" + inter.getFname());
+		HdfsRead(nameinter, resReduce.getFname());
 
     	// On veut transformer ce fichier en un format local
         output.open(Format.OpenMode.R);
 
 		// Puis on applique le reduce sur le résultat concaténé des maps
 		// On stock le résultat dans l'output
+		resReduce.open(Format.OpenMode.R);
 		mr.reduce(resReduce, output);
+		resReduce.close();
 
 		// On extrait une liste de notre format output pour pouvoir le trier
 		List<KV> listeTriee = new ArrayList<>();

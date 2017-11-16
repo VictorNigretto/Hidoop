@@ -6,6 +6,8 @@ import java.util.concurrent.Semaphore;
 
 public class CallBackImpl extends UnicastRemoteObject implements CallBack {
 
+    private static final long serialVersionUID = 1L;
+
     private Semaphore nbMapsFinished;
 
     public CallBackImpl() throws RemoteException {

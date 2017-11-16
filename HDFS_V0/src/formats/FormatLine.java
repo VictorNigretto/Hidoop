@@ -2,6 +2,7 @@ package formats;
 
 
 import java.io.*;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
 import util.Message;
@@ -24,57 +25,55 @@ public class FormatLine implements Format {
 	
 	private String filePath;
 	
-	private ArrayList<String> lines;
-	private ArrayList<KV> KVs;
-	
+	public ArrayList<Object> lines;
+	private ArrayList<Object> KVs;
+
 	// soit Message m mais attention, ou un par type ???
 	private Message<Commande> mCMD;
 	private Message<String> mString;
 
-	private int port;
 	private long index = 1;
 	private String fname;	// nom du fichier
 
-	public FormatLine(String fname, int port) {
+	public FormatLine(String fname) {
 		// Mettre le port en  parametre
 		this.fname = fname;
 		this.mCMD = new Message<Commande>();
 		this.mString = new Message<String>();
-		this.port = port;
 	}
 	
-	public void open(OpenMode mode)  {
+	public void open(formats.Format.OpenMode mode)  {
 		try {
 			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
 			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
 			// Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
 		if (mode == OpenMode.R) {
 			// Récupèrer contenu fichier et le découper en lignes
-			mCMD.send(Commande.CMD_OPEN_R,port);
-			mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
-			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
-			filePath = mString.reception(port);
-			fileRead = new File(filePath);
+			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
+
+
+
+			System.out.println("affichage du fname : "+fname);
+			String nomMachine = InetAddress.getLocalHost().getHostName();
+
+			fileRead = new File(fname);
+			fileRead.setReadable(true);
 			fis = new FileInputStream(fileRead);
 			ois = new ObjectInputStream(fis);
-			Type fmt = (Type) ois.readObject();
-			lines = (ArrayList<String>)ois.readObject();
-
+			System.out.println("bonjour");
+			lines = (ArrayList<Object>)ois.readObject();
 			OpenR = true;
 
 			}
 		if (mode == OpenMode.W) {
 			// Créer le fichier résultat dans format ou serveur?
-			mCMD.send(Commande.CMD_OPEN_W,port);
-			mString.send(fname,port);
-			filePath = mString.reception(port);
-			fileWrite = new File(filePath);
+			fileWrite = new File(fname);
 			fos = new FileOutputStream(fileWrite,true);
 			oos = new ObjectOutputStream(fos);
 			OpenW = true;
 
-			KVs = new ArrayList<KV>();
-			oos.writeObject(Type.KV);
+			KVs = new ArrayList<Object>();
+			KVs.add(Type.KV);
 
 			OpenR = true;
 		}
@@ -111,10 +110,12 @@ public class FormatLine implements Format {
 	@Override
 	public KV read() {
 		// Créer KV index + ligne à index
-		KV kv = new KV();
+		KV kv = null;
+		if (index < (lines.size())) {
+			kv = new KV(( Integer.toString((int) index)), (String) lines.get((int) index));
+		}
+			index++;
 
-		kv =new KV(Integer.toString((int) index), lines.get((int)index - 1));
-		index++;
 
 		return kv;
 	}

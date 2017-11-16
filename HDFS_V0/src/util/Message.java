@@ -3,6 +3,7 @@ package util;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -10,7 +11,7 @@ import java.net.UnknownHostException;
 import formats.KV;
 import formats.Format.Commande;
 
-public class Message<T> {
+public class Message<T> implements Serializable{
 	
 
 	public void send(T objet,int port) {

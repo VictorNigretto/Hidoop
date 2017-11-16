@@ -44,25 +44,6 @@ public class HdfsServer {
 			Commande cmd = (Commande) mCMD.reception(ss);
 			// Traiter la commande reçu
 			switch (cmd) {
-				case CMD_OPEN_R:
-					// Envoyer le path fragFile
-					System.out.print(" Demande d'ouverture en lecture reçue ...");
-					
-					mString.send(file.getAbsolutePath(), ss);
-					System.out.println("fichier ouvert en lecture");
-					break;
-					
-				case CMD_OPEN_W:
-					// Envoyer le path fragFile
-					System.out.print(" Demande d'ouverture en écriture reçue ...");
-
-					fname = mString.reception(ss);
-					File fileRes = new File(fname + "-res");
-					mString.send(fileRes.getAbsolutePath(), ss);
-					System.out.println("fichier ouvert en écriture");
-
-					break;
-
 				case CMD_READ:
 					System.out.print(" Demande de lecture reçue ...");
 
@@ -71,14 +52,16 @@ public class HdfsServer {
 					FileInputStream fis = new FileInputStream (ffname);
 					ObjectInputStream ois = new ObjectInputStream (fis);
 					try {
-						Type fmt = (Type) ois.readObject();
+						System.out.println("coucou");
 						ArrayList<Object> listToSend = (ArrayList<Object>) ois.readObject();
-						mType.send(fmt,ss);
+						mType.send((Type) (listToSend.get(0)),ss);
 						mList.send(listToSend,ss);
 						System.out.println("fragment du fichier envoyé");
 					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
 					}
+					fis.close();
+					ois.close();
 					break;
 					
 				case CMD_WRITE:
@@ -92,11 +75,12 @@ public class HdfsServer {
 					//file.createNewFile();
 					// Reception de la liste
 					ArrayList<Object> listreceived = mList.reception(ss);
+
 					// Ecrire son contenu dans le fichier
-					System.out.println(listreceived.toString());
+
 					FileOutputStream fos = new FileOutputStream(file);
 					ObjectOutputStream oos = new ObjectOutputStream(fos);
-					oos.writeObject(fmt);
+
 					oos.writeObject(listreceived);
 
 					oos.close();
