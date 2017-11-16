@@ -22,15 +22,11 @@ public class FormatKV implements Format{
     private boolean OpenR = false;
     private boolean OpenW = false;
 
-    private String filePath;
 
     private ArrayList<KV> KVstoRead;
     private ArrayList<KV> KVstoWrite;
 
         // soit Message m mais attention, ou un par type ???
-        private Message<Commande> mCMD;
-        private Message<String> mString;
-
         private int port;
         private long index = 1;
         private String fname;	// nom du fichier
@@ -39,20 +35,20 @@ public class FormatKV implements Format{
             // Mettre le port en  parametre
             this.fname = fname;
             this.port = port;
-            this.mCMD = new Message<Commande>();
-            this.mString = new Message<String>();
         }
 
         public void open(OpenMode mode) {
 
             try {
+            	Message m = new Message();
+            	m.openClient(port);
                 // Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
                 if (mode == OpenMode.R) {
                     // Récupèrer contenu fichier et le découper en lignes
-                    mCMD.send(Commande.CMD_OPEN_R, port);
-                    mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
+                    m.send(Commande.CMD_OPEN_R);
+                    m.send(fname);		//précisez le fichier dont on veut obtenir le path
                     //  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
-                    filePath = mString.reception(port);
+                    String filePath = (String) m.receive();
                     fileRead = new File(filePath);
                     fis = new FileInputStream(fileRead);
                     ois = new ObjectInputStream(fis);
@@ -63,9 +59,9 @@ public class FormatKV implements Format{
                 }
                 if (mode == OpenMode.W) {
                     // Créer le fichier résultat dans format ou serveur?
-                    mCMD.send(Commande.CMD_OPEN_W, port);
-                    mString.send(fname, port);
-                    filePath = mString.reception(port);
+                    m.send(Commande.CMD_OPEN_W);
+                    m.send(fname);
+                    String filePath = (String) m.receive();
                     fileWrite = new File(filePath);
                     fos = new FileOutputStream(fileWrite,true);
                     oos = new ObjectOutputStream(fos);
@@ -75,6 +71,7 @@ public class FormatKV implements Format{
                     oos.writeObject(Type.KV);
                     OpenW = true;
                 }
+                m.close();
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

@@ -22,14 +22,10 @@ public class FormatLine implements Format {
 	private boolean OpenR = false;
 	private boolean OpenW = false;
 	
-	private String filePath;
-	
 	private ArrayList<String> lines;
 	private ArrayList<KV> KVs;
 	
 	// soit Message m mais attention, ou un par type ???
-	private Message<Commande> mCMD;
-	private Message<String> mString;
 
 	private int port;
 	private long index = 1;
@@ -38,8 +34,6 @@ public class FormatLine implements Format {
 	public FormatLine(String fname, int port) {
 		// Mettre le port en  parametre
 		this.fname = fname;
-		this.mCMD = new Message<Commande>();
-		this.mString = new Message<String>();
 		this.port = port;
 	}
 	
@@ -48,12 +42,15 @@ public class FormatLine implements Format {
 			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
 			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
 			// Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
+		String filePath;
+		Message m = new Message();
+		m.openClient(port);
 		if (mode == OpenMode.R) {
 			// Récupèrer contenu fichier et le découper en lignes
-			mCMD.send(Commande.CMD_OPEN_R,port);
-			mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
+			m.send(Commande.CMD_OPEN_R);
+			m.send(fname);		//précisez le fichier dont on veut obtenir le path
 			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
-			filePath = mString.reception(port);
+			filePath = (String) m.receive();
 			fileRead = new File(filePath);
 			fis = new FileInputStream(fileRead);
 			ois = new ObjectInputStream(fis);
@@ -65,9 +62,9 @@ public class FormatLine implements Format {
 			}
 		if (mode == OpenMode.W) {
 			// Créer le fichier résultat dans format ou serveur?
-			mCMD.send(Commande.CMD_OPEN_W,port);
-			mString.send(fname,port);
-			filePath = mString.reception(port);
+			m.send(Commande.CMD_OPEN_W);
+			m.send(fname);
+			filePath = (String) m.receive();
 			fileWrite = new File(filePath);
 			fos = new FileOutputStream(fileWrite,true);
 			oos = new ObjectOutputStream(fos);
@@ -78,6 +75,7 @@ public class FormatLine implements Format {
 
 			OpenR = true;
 		}
+		m.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

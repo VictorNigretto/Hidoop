@@ -7,20 +7,48 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import formats.KV;
-import formats.Format.Commande;
-
-public class Message<T> {
+public class Message {
 	
-
-	public void send(T objet,int port) {
-		Socket sock;
+	private Socket sock;			// Socket faisant le lien entre client et serveur
+	private ObjectOutputStream oos;	// descripteur d'écriture d'objets
+	private ObjectInputStream ois;	// descripteur de lecture d'objets
+	
+	// Ouvre le Socket du client vers le serveurs et les descripteurs d'écriture et de lecture
+	public ObjectOutputStream openClient(int port) {
 		try {
-			sock = new Socket("localhost",port);
-			ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream());
+			 sock = new Socket("localhost",port);
+			 oos = new ObjectOutputStream(sock.getOutputStream());
+			 ois = new ObjectInputStream(sock.getInputStream());
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return oos;
+	}
+	
+	// Ouvre le Socket du serveur vers le client et les descripteurs d'écriture et de lecture
+	public ObjectOutputStream openServer(ServerSocket ss) {
+		try {
+			 sock = ss.accept();
+			 oos = new ObjectOutputStream(sock.getOutputStream());
+			 ois = new ObjectInputStream(sock.getInputStream());
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return oos;
+	}
+
+	// Ecrit un objet en paramètre dans le descripteur d'écriture
+	public void send(Object objet) {
+		try {
 			oos.writeObject(objet);
-			oos.close();
-			sock.close();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -30,31 +58,11 @@ public class Message<T> {
 		}
 	}
 	
-	public void send(T objet, ServerSocket ss) {
-		Socket ssock;
+	// Lit un objet présent dans le descripteur de lecture
+	public Object receive() {
+		Object objet = null;
 		try {
-			ssock = ss.accept();
-			ObjectOutputStream oos = new ObjectOutputStream(ssock.getOutputStream());
-			oos.writeObject(objet);
-			oos.close();
-			ssock.close();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public T reception(int port) {
-		T objet = null;
-		try {
-			Socket sock = new Socket("localhost",port);
-			ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
-			objet = (T) ois.readObject();
-			ois.close();
-			sock.close();
+			objet = (Object) ois.readObject();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -68,25 +76,16 @@ public class Message<T> {
 		return objet;
 	}
 	
-	public T reception(ServerSocket ss) {
-		T objet = null;
+	// Ferme les descripteurs et le Socket
+	public void close() {
 		try {
-			Socket ssock = ss.accept();
-			ObjectInputStream ois = new ObjectInputStream(ssock.getInputStream());
-			objet = (T) ois.readObject();
 			ois.close();
-			ssock.close();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			oos.close();
+			sock.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		return objet;
 	}
 	
 }
