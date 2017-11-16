@@ -28,9 +28,10 @@ public class FormatLine implements Format {
 	public ArrayList<Object> lines;
 	private ArrayList<Object> KVs;
 
+
+	private int port;
+
 	// soit Message m mais attention, ou un par type ???
-	private Message<Commande> mCMD;
-	private Message<String> mString;
 
 	private long index = 1;
 	private String fname;	// nom du fichier
@@ -38,8 +39,7 @@ public class FormatLine implements Format {
 	public FormatLine(String fname) {
 		// Mettre le port en  parametre
 		this.fname = fname;
-		this.mCMD = new Message<Commande>();
-		this.mString = new Message<String>();
+
 	}
 	
 	public void open(formats.Format.OpenMode mode)  {
@@ -47,6 +47,9 @@ public class FormatLine implements Format {
 			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
 			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
 			// Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
+		String filePath;
+		Message m = new Message();
+		m.openClient(port);
 		if (mode == OpenMode.R) {
 			// Récupèrer contenu fichier et le découper en lignes
 			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
@@ -58,6 +61,7 @@ public class FormatLine implements Format {
 
 			fileRead = new File(fname);
 			fileRead.setReadable(true);
+
 			fis = new FileInputStream(fileRead);
 			ois = new ObjectInputStream(fis);
 			System.out.println("bonjour");
@@ -68,6 +72,7 @@ public class FormatLine implements Format {
 		if (mode == OpenMode.W) {
 			// Créer le fichier résultat dans format ou serveur?
 			fileWrite = new File(fname);
+
 			fos = new FileOutputStream(fileWrite,true);
 			oos = new ObjectOutputStream(fos);
 			OpenW = true;
@@ -77,6 +82,7 @@ public class FormatLine implements Format {
 
 			OpenR = true;
 		}
+		m.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

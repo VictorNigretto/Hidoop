@@ -72,19 +72,21 @@ public class Job implements JobInterface {
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
+    	System.out.println("Lancement du job ...");
+    	
 		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
 		Format input, inter, output;
         if(inputFormat == Format.Type.LINE) { // LINE
 			input = new FormatLine(inputFName, Format.Type.LINE);
-			inter = new FormatLine(interFName, Format.Type.LINE);
 			output = new FormatLine(outputFName, Format.Type.LINE);
 		} else { // KV
 			input = new FormatKV(inputFName, Format.Type.KV);
-			inter = new FormatKV(interFName, Format.Type.KV);
 			output = new FormatKV(outputFName, Format.Type.KV);
 		}
+		inter = new FormatKV(interFName, Format.Type.KV);
 
     	// récupérer la liste des démons sur l'annuaire
+		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
     		try {
@@ -96,6 +98,7 @@ public class Job implements JobInterface {
 				e.printStackTrace();
 			}
     	}
+    	System.out.println("OK");
 
     	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
 		CallBack cb = null;
@@ -106,26 +109,34 @@ public class Job implements JobInterface {
 		}
 
 		// Puis on va lancer les maps sur les différents démons
+		System.out.println("Lancement des Maps ...");
 		for(Daemon d : demons) {
 			try {
 				// on appelle le map sur le démon
 				// on utilise le même format input et le même format output pour chacun
 				// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
 				// sur les différents démons, que s'effectuera le chargement des différents chunks
-				d.runMap(mr, input, inter, cb);
+				MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
+				mapRunner.start();
+				
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
 		}
+    	System.out.println("OK");
 
 		// Puis on attends que tous les démons aient finis leur travail
+    	System.out.println("Attente de la confirmation des Daemons ...");
 		try {
 			cb.waitFinishedMap(numberOfMaps);
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	System.out.println("OK");
 
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
+    	System.out.println("Récupération du fichier résultat ...");
 		Format resReduce;
 		if(inputFormat == Format.Type.LINE) {
 			resReduce = new FormatLine("resReduceFormat", Format.Type.LINE);
@@ -133,15 +144,19 @@ public class Job implements JobInterface {
 			resReduce = new FormatKV("resReduceFormat", Format.Type.KV);
 		}
 		HdfsRead(inter.getFname(), resReduce.getFname());
+    	System.out.println("OK");
 
     	// On veut transformer ce fichier en un format local
         output.open(Format.OpenMode.R);
 
 		// Puis on applique le reduce sur le résultat concaténé des maps
 		// On stock le résultat dans l'output
-		mr.reduce(resReduce, output);
+    	System.out.println("Lancement du Reduce ...");
+    	mr.reduce(resReduce, output);
+    	System.out.println("OK");
 
 		// On extrait une liste de notre format output pour pouvoir le trier
+    	System.out.println("Écriture du fichier résultat en local ...");
 		List<KV> listeTriee = new ArrayList<>();
     	KV kv;
     	while((kv = output.read()) != null) {
@@ -163,6 +178,8 @@ public class Job implements JobInterface {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+    	System.out.println("OK");
+    	System.out.println("Fin du job, merci pour votre patience :)");
 	}
 	
 	/*****************************************

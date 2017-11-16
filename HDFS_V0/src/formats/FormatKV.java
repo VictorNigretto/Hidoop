@@ -22,14 +22,11 @@ public class FormatKV implements Format{
     private boolean OpenR = false;
     private boolean OpenW = false;
 
-    private String filePath;
 
     private ArrayList<Object> KVstoRead;
     private ArrayList<Object> KVstoWrite;
-
+    private int port;
         // soit Message m mais attention, ou un par type ???
-        private Message<Commande> mCMD;
-        private Message<String> mString;
 
         private long index = 1;
         private String fname;	// nom du fichier
@@ -37,18 +34,21 @@ public class FormatKV implements Format{
         public FormatKV(String fname) {
             // Mettre le port en  parametre
             this.fname = fname;
-            this.mCMD = new Message<Commande>();
-            this.mString = new Message<String>();
+
         }
 
         public void open(OpenMode mode) {
 
             try {
+            	Message m = new Message();
+            	m.openClient(port);
                 // Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
                 if (mode == OpenMode.R) {
                     // Récupèrer contenu fichier et le découper en lignes
-                    //  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
+
+
                     fileRead = new File(fname);
+
                     fis = new FileInputStream(fileRead);
                     ois = new ObjectInputStream(fis);
                     KVstoRead = (ArrayList<Object>) ois.readObject();
@@ -68,6 +68,7 @@ public class FormatKV implements Format{
                     KVstoWrite.add(Type.KV);
                     OpenW = true;
                 }
+                m.close();
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

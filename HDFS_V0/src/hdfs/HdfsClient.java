@@ -35,28 +35,27 @@ public class HdfsClient {
     public static void HdfsDelete(String hdfsFname) {
 		int nbServer = servers.length;
 		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
-		Message<Commande> mCMD = new Message<Commande>();
-		Message<String> mString = new Message<>();
+		Message m = new Message();
 
-		for (int i = 0; i < nbServer; i++) {	
-			mCMD.send(Commande.CMD_DELETE, servers[i]);
-			mString.send(hdfsFname  + String.valueOf(i),servers[i]);
+		for (int i = 0; i < nbServer; i++) {
+			m.openClient(servers[i]);
+			m.send(Commande.CMD_DELETE);
+			m.send(hdfsFname  + String.valueOf(i));
+			m.close();
 			System.out.println("envoyee au serveur " + i );
 		}
 	}
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
-    		Message<String> mString = new Message<String>();
-			Message<Commande> mCMD = new Message<Commande>();
-			Message<Type> mType = new Message<Type>();
+    		Message m = new Message();
 
 			File fichier = new File(localFSSourceFname);
 
 			int nbServer = servers.length;
 
 			if (fmt == Format.Type.LINE) {
-				Message <ArrayList<Object>> mStringlist = new Message<ArrayList<Object>>();
+
 				
 				System.out.println("Demande d'écriture d'un fichier (LINE)...");
 
@@ -90,18 +89,19 @@ public class HdfsClient {
 					for (int j = 0 ; j<nbLineSent ; j++) {
 						listS.add(br.readLine());
 					}
-
-					mCMD.send(Commande.CMD_WRITE, servers[i]);
+					m.openClient(servers[i]);
+					m.send(Commande.CMD_WRITE);
 					System.out.println("envoyée au serveur " + i);
-					mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-					mType.send(Type.LINE, servers[i]);
-					mStringlist.send(listS, servers[i]);
+					m.send(fichier.getName() + String.valueOf(i));
+					m.send(Type.LINE);
+					m.send(listS);
+					m.close();
 					System.out.println("fragment envoyé au serveur " + i);
 				}
 				br.close();
 				fr.close();
 				} else if (fmt == Format.Type.KV) {
-					Message<ArrayList<Object>> mKVlist = new Message<ArrayList<Object>>();
+
 
 				//Lire KV par KV et compter
 					System.out.println("Demande d'écriture d'un fichier (KV)...");
@@ -146,11 +146,13 @@ public class HdfsClient {
 							KVlist.add(newKV);
 
 						}
-						mCMD.send(Commande.CMD_WRITE, servers[i]);
+						m.openClient(servers[i]);
+						m.send(Commande.CMD_WRITE);
 						System.out.println("envoyée au serveur " + i);
-						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-						mType.send(Type.KV, servers[i]);
-						mKVlist.send(KVlist, servers[i]);
+						m.send(fichier.getName() + String.valueOf(i));
+						m.send(Type.KV);
+						m.send(KVlist);
+						m.close();
 						System.out.println("fragment envoyé au serveur " + i);
 					}
 					ois2.close();
@@ -171,21 +173,21 @@ public class HdfsClient {
 
     public static void HdfsRead(String hdfsFname, String localFSDestFname) {
 		System.out.println("Demande de lecture d'un fichier ...");
-		Message<String> mString = new Message<String>();
-		Message<Commande> mCMD = new Message<Commande>();
-		Message<Type> mType = new Message<Type>();
-		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
+		Message m = new Message();
+
 		File file = new File(localFSDestFname);
 		try {
 			
 
 			for (int i = 0; i < servers.length; i++) {
-				mCMD.send(Commande.CMD_READ, servers[i]);
+				m.openClient(servers[i]);
+				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
-				mString.send(hdfsFname + String.valueOf(i), servers[i]);
-				System.out.println("fichier écrit " + hdfsFname + String.valueOf(i));
-				Type fmt = mType.reception(servers[i]);
-				ArrayList<Object> listReceived = mList.reception(servers[i]);
+
+				m.send(hdfsFname + String.valueOf(i));
+				Type fmt = (Type) m.receive();
+				ArrayList<Object> listReceived = (ArrayList<Object>) m.receive();
+				m.close();
 
 				for (Object o : listReceived) {
 					if (! (o instanceof Type)) {

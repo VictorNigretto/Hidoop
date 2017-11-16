@@ -17,6 +17,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	protected DaemonImpl(String name) throws RemoteException {
 		super();
 		this.name = name;
+		System.out.println("Création du Deamon " + this.name);
 	}
 
 	@Override
@@ -27,7 +28,9 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		reader.open(Format.OpenMode.R);
 		writer.open(Format.OpenMode.W);
 
+		System.out.println("Lancement du Map ...");
 		m.map(reader, writer);
+		System.out.println("OK");
 
 		reader.close();
 		writer.close();
