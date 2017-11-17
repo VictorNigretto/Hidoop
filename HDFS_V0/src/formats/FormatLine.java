@@ -11,20 +11,14 @@ import formats.Format.Type;
 
 public class FormatLine implements Format {
 
-
 	private FileReader fr;
 	private BufferedReader br;
 	private FileWriter fw;
-	private ObjectOutputStream oos;
 	
 	private boolean OpenR = false;
 	private boolean OpenW = false;
 
-	public String[] lines;
-	private ArrayList<Object> KVs;
-
-
-	private int port;
+	public ArrayList<String> lines = new ArrayList<String>();
 
 	private long index = 1; // index de lecture
 	private String fname;	// nom du fichier
@@ -39,27 +33,26 @@ public class FormatLine implements Format {
 			File file = new File(fname);
 			// Si mode lecture :
 			if (mode == OpenMode.R) {
-				System.out.println("ouverture en lecture du fichier : " + fname);
+				System.out.println("Ouverture en lecture du fichier : " + fname);
 				// Ouvrir le fichier en lecture
 				file.setReadable(true);
 				fr = new FileReader(file);
-				// Lire le contenu du fichier
-				br = new BufferedReader(fr);
-				char[] buf = null;
-				br.read(buf);
-				String contentFile = new String(buf);
+				// Lire le contenu du fichier ligne par ligne et les mettre dans un tableau
+				br = new BufferedReader(fr);	
+				String line;
+				while ((line = br.readLine()) != null) {
+					lines.add(line);
+				}
 				br.close();
-				// Découper le contenu du fichier en tableau de lignes
-				lines = contentFile.split("\n");
 				// Mettre OpenR à vrai pour signaler l'ouverture du descripteur de lecture
 				OpenR = true;
 			}
 			// Si mode écriture :
 			if (mode == OpenMode.W) {
-				System.out.println("ouverture en écriture du fichier : " + fname);
+				System.out.println("Ouverture en écriture du fichier : " + fname);
 				// Ouvrir le fichier en écriture
 				file.setWritable(true);
-				fw = new FileWriter(file);
+				fw = new FileWriter(file,true);	
 				// Mettre OpenW à vrai pour signaler l'ouverture du descripteur en écriture
 				OpenW = true;
 			}
@@ -70,8 +63,7 @@ public class FormatLine implements Format {
 	}
 	
 	public void close() {
-		//mCMD.send(Commande.CMD_CLOSE,port);
-		// fermer sock normalement je pense ou descripteurs
+		System.out.println("Fermeture du format");
 		try {
 			// Si le fichier a été ouvert en lecture, fermer le descripteur de lecture
 			if (OpenR) {
@@ -79,7 +71,7 @@ public class FormatLine implements Format {
 			}
 			// Si le fichier a été ouvert en écriture, fermer le descripteur d'écriture
 			if (OpenW) {
-				fw.close();
+				fw.close();	
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -91,9 +83,10 @@ public class FormatLine implements Format {
 	public KV read() {
 		KV kv = null;
 		// Si l'index est inférieur au nombre d'éléments du tableau de lignes
-		if (index <= (lines.length)) {
+		if (index <= (lines.size())) {
 			// Créer un KV ayant pour clé le numéro d'une ligne (index) et pour valeur le contenu de cette ligne (lines[index-1])
-			kv = new KV(Integer.toString((int) index), lines[(int) index - 1]);
+			kv = new KV(Integer.toString((int) index), lines.get((int) index - 1));
+			System.out.println("Lecture de la ligne " + index);
 		}
 		// Incrémenter l'index
 		index++;
@@ -102,9 +95,10 @@ public class FormatLine implements Format {
 
 	@Override
 	public void write(KV record) {
-		try {
+		try {		
 			// Ecrire la ligne du KV en paramètre
-			fw.write(record.v);
+			fw.write(record.v + "\n");
+			System.out.println("Ecriture d'un KV");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -128,9 +122,8 @@ public class FormatLine implements Format {
 	// Modifier le nom du fichier traiter
 	public void setFname(String newFname) {
 		File file = new File(fname);
-		this.fname = newFname;
-		file.renameTo(new File(file.getPath()+File.separator+newFname));
-		
+		file.renameTo(new File(file.getAbsolutePath().replaceAll(fname, newFname)));
+		this.fname = newFname;	
 	}
 	
 }
