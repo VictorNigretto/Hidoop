@@ -51,9 +51,10 @@ public class HdfsServer {
 					FileInputStream fis = new FileInputStream (fname);
 					ObjectInputStream ois = new ObjectInputStream (fis);
 					try {
+						
 						ArrayList<Object> listToSend = (ArrayList<Object>) ois.readObject();
 
-						m.send(fmt);
+						m.send(listToSend.get(0));
 						m.send(listToSend);
 						System.out.println("fragment du fichier envoyé");
 					} catch (ClassNotFoundException e) {
