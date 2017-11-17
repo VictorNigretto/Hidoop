@@ -77,13 +77,11 @@ public class HdfsServer {
 					//Creation du fichier en local (dans le serveur)
 					File file = new File(fname);
 					FileWriter fw = new FileWriter(fname);
-					BufferedWriter bw = new BufferedWriter(fw);
 
 					// Reception de la chaine de caractères correspondant au fragment
 					String strReceived = (String) m.receive();
-					bw.write(strReceived, 0, strReceived.length()-1);
+					fw.write(strReceived, 0, strReceived.length()-1);
 					//Fermeture du fichier
-					bw.close();
 					fw.close();
 					System.out.println("fragment du fichier enregistré");
 					break;
