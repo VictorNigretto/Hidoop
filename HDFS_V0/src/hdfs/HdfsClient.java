@@ -50,7 +50,7 @@ public class HdfsClient {
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
     		Message m = new Message();
-
+    		
 			File fichier = new File(localFSSourceFname);
 
 			int nbServer = servers.length;
@@ -110,6 +110,8 @@ public class HdfsClient {
 					// On en reconnait pas le format
 					System.out.println("Le format indiqué n'est pas reconnu par hdfs");
 				}
+    	} catch (FileNotFoundException fnfe) {
+    		System.out.println("fichier local non existant");
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
