@@ -7,111 +7,105 @@ import util.Message;
 import java.io.*;
 import java.util.ArrayList;
 
+import formats.Format.OpenMode;
+
 public class FormatKV implements Format{
 
 
 // Essayer de factoriser en classe générique classes envoi et reception
 
-    private File fileRead;
-    private FileInputStream fis;
-    private ObjectInputStream ois;
-    private File fileWrite;
-    private FileOutputStream fos;
-    private ObjectOutputStream oos;
+	private FileReader fr;
+	private BufferedReader br;
+	private FileWriter fw;
+	
+	private boolean OpenR = false;
+	private boolean OpenW = false;
 
-    private boolean OpenR = false;
-    private boolean OpenW = false;
+	public ArrayList<String> lines = new ArrayList<String>();
 
-
-    private ArrayList<Object> KVstoRead;
-    private ArrayList<Object> KVstoWrite;
-    private int port;
-        // soit Message m mais attention, ou un par type ???
-
-        private long index = 1;
-        private String fname;	// nom du fichier
+	private long index = 1; // index de lecture
+	private String fname;	// nom du fichier
 
         public FormatKV(String fname) {
-            // Mettre le port en  parametre
             this.fname = fname;
-
         }
 
-        public void open(OpenMode mode) {
+    	public void open(formats.Format.OpenMode mode)  {
+    		try {
+    			// Récupérer fichier "fname"
+    			File file = new File(fname);
+    			// Si mode lecture :
+    			if (mode == OpenMode.R) {
+    				System.out.println("Ouverture en lecture du fichier : " + fname);
+    				// Ouvrir le fichier en lecture
+    				file.setReadable(true);
+    				fr = new FileReader(file);
+    				// Lire le contenu du fichier ligne par ligne et les mettre dans un tableau
+    				br = new BufferedReader(fr);	
+    				String line;
+    				while ((line = br.readLine()) != null) {
+    					lines.add(line);
+    				}
+    				br.close();
+    				// Mettre OpenR à vrai pour signaler l'ouverture du descripteur de lecture
+    				OpenR = true;
+    			}
+    			// Si mode écriture :
+    			if (mode == OpenMode.W) {
+    				System.out.println("Ouverture en écriture du fichier : " + fname);
+    				// Ouvrir le fichier en écriture
+    				file.setWritable(true);
+    				fw = new FileWriter(file,true);	
+    				// Mettre OpenW à vrai pour signaler l'ouverture du descripteur en écriture
+    				OpenW = true;
+    			}
+    		} catch (IOException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+    	}
+    	
+    	public void close() {
+    		System.out.println("Fermeture du format");
+    		try {
+    			// Si le fichier a été ouvert en lecture, fermer le descripteur de lecture
+    			if (OpenR) {
+    				fr.close();
+    			}
+    			// Si le fichier a été ouvert en écriture, fermer le descripteur d'écriture
+    			if (OpenW) {
+    				fw.close();	
+    			}
+    		} catch (IOException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+    	}
 
-            try {
-            	Message m = new Message();
-            	m.openClient(port);
-                // Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
-                if (mode == OpenMode.R) {
-                    // Récupèrer contenu fichier et le découper en lignes
-
-
-                    fileRead = new File(fname);
-
-                    fis = new FileInputStream(fileRead);
-                    ois = new ObjectInputStream(fis);
-                    KVstoRead = (ArrayList<Object>) ois.readObject();
-                    Type fmt = (Type) KVstoRead.get(0);
-
-
-                }
-                if (mode == OpenMode.W) {
-                    // Créer le fichier résultat dans format ou serveur?
-
-                    fileWrite = new File(fname);
-                    fos = new FileOutputStream(fileWrite,true);
-                    oos = new ObjectOutputStream(fos);
-                    OpenW = true;
-
-                    KVstoWrite = new ArrayList<Object>();
-                    KVstoWrite.add(Type.KV);
-                    OpenW = true;
-                }
-                m.close();
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-
-    public void close() {
-            // fermer sock normalement je pense ou descripteurs
-            try {
-                if (OpenR) {
-                    ois.close();
-                    fis.close();
-                }
-                if (OpenW) {
-                    oos.writeObject(KVstoWrite);
-                    oos.close();
-                    fos.close();                }
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public KV read() {
-            // Créer KV index + ligne à index
-
-            index++;
-            if (index < KVstoRead.size() ) {
-                return (KV) KVstoRead.get((int) index );
-            }else {
-                return null;
-            }
-        }
+    	@Override
+    	public KV read() {
+    		KV kv = null;
+    		// Si l'index est inférieur au nombre d'éléments du tableau de lignes
+    		if (index <= (lines.size())) {
+    			// On récupère la clé et la valeur du KV
+    			String[] line = lines.get((int) index - 1).split(KV.SEPARATOR);	
+    			kv = new KV(line[0], line[1]);
+    			System.out.println("Lecture du KV " + index);
+    		}
+    		// Incrémenter l'index
+    		index++;
+    		return kv;
+    	}
 
         @Override
         public void write(KV record) {
-            KVstoWrite.add(record);
+            try {
+				fw.write(record.k + KV.SEPARATOR + record.v + "\n");
+				System.out.println("Ecriture d'un KV");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         }
 
         @Override
@@ -127,8 +121,10 @@ public class FormatKV implements Format{
         }
 
         @Override
-        public void setFname(String fname) {
-            this.fname = fname;
+        public void setFname(String newFname) {
+    		File file = new File(fname);
+    		file.renameTo(new File(file.getAbsolutePath().replaceAll(fname, newFname)));
+    		this.fname = newFname;	
         }
 
     }

@@ -39,6 +39,7 @@ public class HdfsClient {
 		Message m = new Message();
 
 		for (int i = 0; i < nbServer; i++) {
+			//On supprime le fichier sur tous les serveurs
 			m.openClient(servers[i]);
 			m.send(Commande.CMD_DELETE);
 			m.send(hdfsFname  + String.valueOf(i));
@@ -50,12 +51,11 @@ public class HdfsClient {
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
     		Message m = new Message();
-
+    		
 			File fichier = new File(localFSSourceFname);
 
 			int nbServer = servers.length;
 
-			System.out.println("On est rentré dans HDFS write !");
 			if (fmt == Format.Type.LINE || fmt == Format.Type.KV) {
 				//On a donc un format line ou un format KV, dans les deux cas le fichier est écrits sous forme de fichier text 
 				
@@ -111,6 +111,8 @@ public class HdfsClient {
 					// On en reconnait pas le format
 					System.out.println("Le format indiqué n'est pas reconnu par hdfs");
 				}
+    	} catch (FileNotFoundException fnfe) {
+    		System.out.println("fichier local non existant");
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
@@ -122,6 +124,7 @@ public class HdfsClient {
 		Message m = new Message();
 		File file = new File(localFSDestFname);
 		try {
+			FileWriter fw = new FileWriter(file, true);
 			// On récupère pour chaque serveurs les fragments de fichier et on écrit à la suite,
 			// les lignes (ou les kv) dans un fichier local
 			for (int i = 0; i < servers.length; i++) {
@@ -131,26 +134,22 @@ public class HdfsClient {
 				m.openClient(servers[i]);
 				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
-				m.send(hdfsFname + String.valueOf(i));
+				//m.send(hdfsFname + String.valueOf(i));
+				m.send(hdfsFname);
 				String strReceived = (String) m.receive();
 				m.close();
 								
 				//on rajoute donc les lignes reçu dans le fichier local à la fin
-				FileWriter fw = new FileWriter(file, true);
-				BufferedWriter bw = new BufferedWriter(fw);
-				bw.write(strReceived, 0, strReceived.length());
-			
-				bw.close();
-				fw.close();
+				
+				fw.write(strReceived, 0, strReceived.length());		
 			}
+			fw.close();
 			System.out.print("Ecriture des données dans un fichier local ...");
 			System.out.println("données écrites");
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-
 		}
+	
 	}
 
 

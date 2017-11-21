@@ -78,12 +78,11 @@ public class Job implements JobInterface {
 		Format input, inter, output;
         if(inputFormat == Format.Type.LINE) { // LINE
 			input = new FormatLine(inputFName);
-			output = new FormatLine(outputFName);
 		} else { // KV
 			input = new FormatKV(inputFName);
-			output = new FormatKV(outputFName);
 		}
 		inter = new FormatKV(interFName);
+		output = new FormatKV(outputFName);
 
     	// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
@@ -135,9 +134,9 @@ public class Job implements JobInterface {
     	System.out.println("Récupération du fichier résultat ...");
 		Format resReduce;
 		if(inputFormat == Format.Type.LINE) {
-			resReduce = new FormatLine("resReduceFormat");
+			resReduce = new FormatLine(input.getFname() + "-res");
 		} else {
-			resReduce = new FormatKV("resReduceFormat");
+			resReduce = new FormatKV(input.getFname() + "-res");
 		}
 		HdfsRead(inter.getFname(), resReduce.getFname());
     	System.out.println("OK");
@@ -158,7 +157,8 @@ public class Job implements JobInterface {
     	while((kv = output.read()) != null) {
     		listeTriee.add(kv);
 		}
-		listeTriee.sort((Comparator<? super KV>) sortComparator);
+    	// On peut rajouter un comparateur pour trier notre résultat
+		//listeTriee.sort((Comparator<? super KV>) sortComparator);
 
 		// Puis on l'écrit dans le fichier de sortie
 		File fOutput = new File(outputFName);
