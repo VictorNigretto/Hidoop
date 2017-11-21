@@ -124,6 +124,7 @@ public class HdfsClient {
 		Message m = new Message();
 		File file = new File(localFSDestFname);
 		try {
+			FileWriter fw = new FileWriter(file, true);
 			// On récupère pour chaque serveurs les fragments de fichier et on écrit à la suite,
 			// les lignes (ou les kv) dans un fichier local
 			for (int i = 0; i < servers.length; i++) {
@@ -138,11 +139,10 @@ public class HdfsClient {
 				m.close();
 								
 				//on rajoute donc les lignes reçu dans le fichier local à la fin
-				FileWriter fw = new FileWriter(file, true);
-				fw.write(strReceived, 0, strReceived.length());
-			
-				fw.close();
+				
+				fw.write(strReceived, 0, strReceived.length());		
 			}
+			fw.close();
 			System.out.print("Ecriture des données dans un fichier local ...");
 			System.out.println("données écrites");
 		} catch (Exception e) {
