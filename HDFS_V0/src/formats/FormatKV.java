@@ -90,7 +90,6 @@ public class FormatKV implements Format{
     			// On récupère la clé et la valeur du KV
     			String[] line = lines.get((int) index - 1).split(KV.SEPARATOR);	
     			kv = new KV(line[0], line[1]);
-    			System.out.println("Lecture du KV " + index);
     		}
     		// Incrémenter l'index
     		index++;
@@ -101,7 +100,6 @@ public class FormatKV implements Format{
         public void write(KV record) {
             try {
 				fw.write(record.k + KV.SEPARATOR + record.v + "\n");
-				System.out.println("Ecriture d'un KV");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
