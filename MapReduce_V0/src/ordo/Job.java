@@ -110,13 +110,22 @@ public class Job implements JobInterface {
 
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
+		int index = 0;
+		String nomOriginal = inter.getFname();
 		for(Daemon d : demons) {
+			
+			inter.setFname(nomOriginal + index);
+
+			System.out.println(inter.getFname());
+			index++;
 			// on appelle le map sur le démon
 			// on utilise le même format input et le même format output pour chacun
 			// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
 			// sur les différents démons, que s'effectuera le chargement des différents chunks
 			MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
+			//PROBLEME : on écrit toujours sur le meme fichier meme si on change son nom
 			mapRunner.start();
+			inter.setFname(nomOriginal);
 		}
     	System.out.println("OK");
 
@@ -138,7 +147,13 @@ public class Job implements JobInterface {
 		} else {
 			resReduce = new FormatKV(input.getFname() + "-res");
 		}
-		HdfsRead(inter.getFname(), resReduce.getFname());
+		//System.out.println("fname : " + inter.getFname());
+		
+		index = 0;
+		for (Daemon d : demons){
+			HdfsRead(inter.getFname() + index, resReduce.getFname());
+			index++;
+    	}
     	System.out.println("OK");
 
     	// On veut transformer ce fichier en un format local

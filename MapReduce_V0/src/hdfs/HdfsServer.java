@@ -51,6 +51,7 @@ public class HdfsServer {
 					System.out.println(" Demande de lecture reçue ... ");
 					
 					String fname = (String) m.receive();
+					System.out.println("fname : " + fname);
 					
 					try {
 					FileReader fr = new FileReader(fname);
@@ -69,7 +70,7 @@ public class HdfsServer {
 					m.send(strToSend);
 					System.out.println("fragment du fichier envoyé");
 					} catch (FileNotFoundException fnfe) {
-						System.out.println("fichier lu non existant : " + fname);
+						System.out.println("fichier lu non existant");
 					}
 					break;
 					
