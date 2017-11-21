@@ -77,13 +77,13 @@ public class Job implements JobInterface {
 		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
 		Format input, inter, output;
         if(inputFormat == Format.Type.LINE) { // LINE
-			input = new FormatLine(inputFName, Format.Type.LINE);
-			output = new FormatLine(outputFName, Format.Type.LINE);
+			input = new FormatLine(inputFName);
+			output = new FormatLine(outputFName);
 		} else { // KV
-			input = new FormatKV(inputFName, Format.Type.KV);
-			output = new FormatKV(outputFName, Format.Type.KV);
+			input = new FormatKV(inputFName);
+			output = new FormatKV(outputFName);
 		}
-		inter = new FormatKV(interFName, Format.Type.KV);
+		inter = new FormatKV(interFName);
 
     	// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
@@ -92,6 +92,7 @@ public class Job implements JobInterface {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
+    			System.out.println("On se connecte à : " + "//localhost/" + machines.get(i));
 				demons.add((Daemon) Naming.lookup("//localhost/" + machines.get(i)));
 				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
@@ -111,17 +112,12 @@ public class Job implements JobInterface {
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
 		for(Daemon d : demons) {
-			try {
-				// on appelle le map sur le démon
-				// on utilise le même format input et le même format output pour chacun
-				// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
-				// sur les différents démons, que s'effectuera le chargement des différents chunks
-				MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
-				mapRunner.start();
-				
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
+			// on appelle le map sur le démon
+			// on utilise le même format input et le même format output pour chacun
+			// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
+			// sur les différents démons, que s'effectuera le chargement des différents chunks
+			MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
+			mapRunner.start();
 		}
     	System.out.println("OK");
 
@@ -139,9 +135,9 @@ public class Job implements JobInterface {
     	System.out.println("Récupération du fichier résultat ...");
 		Format resReduce;
 		if(inputFormat == Format.Type.LINE) {
-			resReduce = new FormatLine("resReduceFormat", Format.Type.LINE);
+			resReduce = new FormatLine("resReduceFormat");
 		} else {
-			resReduce = new FormatKV("resReduceFormat", Format.Type.KV);
+			resReduce = new FormatKV("resReduceFormat");
 		}
 		HdfsRead(inter.getFname(), resReduce.getFname());
     	System.out.println("OK");
@@ -251,8 +247,8 @@ public class Job implements JobInterface {
 
     public void initMachines(){
     	this.machines = new ArrayList<String>();
-    		machines.add("succube");
-    		machines.add("lucifer");
-    		machines.add("cthun");
+    		machines.add("Succube");
+    		machines.add("Lucifer");
+    		machines.add("Cthun");
 	}
 }

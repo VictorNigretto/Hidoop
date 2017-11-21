@@ -2,6 +2,7 @@ package formats;
 
 
 import java.io.*;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
 import util.Message;
@@ -9,82 +10,65 @@ import formats.Format.OpenMode;
 import formats.Format.Type;
 
 public class FormatLine implements Format {
-	
-// Essayer de factoriser en classe générique classes envoi et reception
 
-	private File fileRead;
-	private FileInputStream fis;
-	private ObjectInputStream ois;
-	private File fileWrite;
-	private FileOutputStream fos;
+
+	private FileReader fr;
+	private BufferedReader br;
+	private FileWriter fw;
 	private ObjectOutputStream oos;
 	
 	private boolean OpenR = false;
 	private boolean OpenW = false;
-	
-	private String filePath;
-	
-	private ArrayList<String> lines;
-	private ArrayList<KV> KVs;
-	
-	// soit Message m mais attention, ou un par type ???
-	private Message<Commande> mCMD;
-	private Message<String> mString;
+
+	public String[] lines;
+	private ArrayList<Object> KVs;
+
 
 	private int port;
-	private long index = 1;
+
+	private long index = 1; // index de lecture
 	private String fname;	// nom du fichier
 
-	public FormatLine(String fname, int port) {
-		// Mettre le port en  parametre
+	public FormatLine(String fname) {
 		this.fname = fname;
-		this.mCMD = new Message<Commande>();
-		this.mString = new Message<String>();
-		this.port = port;
 	}
 	
-	public void open(OpenMode mode)  {
+	public void open(formats.Format.OpenMode mode)  {
 		try {
-			//pas d 'ouverture de descripteur en lecture, envoyer copie fichier ?
-			// Ouvrir pour chaques ecriture/lecture, ou une seule fois?
-			// Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
-		if (mode == OpenMode.R) {
-			// Récupèrer contenu fichier et le découper en lignes
-			mCMD.send(Commande.CMD_OPEN_R,port);
-			mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
-			//  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?		
-			filePath = mString.reception(port);
-			fileRead = new File(filePath);
-			fis = new FileInputStream(fileRead);
-			ois = new ObjectInputStream(fis);
-			Type fmt = (Type) ois.readObject();
-			lines = (ArrayList<String>)ois.readObject();
-
-			OpenR = true;
-
+			// Récupérer fichier "fname"
+			System.out.println("fname : " + fname);
+			File file = new File(fname);
+			System.out.println("fileAbsolutePath : " + file.getAbsolutePath());
+			// Si mode lecture :
+			if (mode == OpenMode.R) {
+				System.out.println("ouverture en lecture du fichier : " + fname);
+				// Ouvrir le fichier en lecture
+				file.setReadable(true);
+				fr = new FileReader(file);
+				System.out.println("fileReader : " + fr);
+				// Lire le contenu du fichier
+				br = new BufferedReader(fr);
+				System.out.println("BufferedReader : " + br);
+				char[] buf = null;
+				br.read(buf);
+				String contentFile = new String(buf);
+				br.close();
+				// Découper le contenu du fichier en tableau de lignes
+				lines = contentFile.split("\n");
+				// Mettre OpenR à vrai pour signaler l'ouverture du descripteur de lecture
+				OpenR = true;
 			}
-		if (mode == OpenMode.W) {
-			// Créer le fichier résultat dans format ou serveur?
-			mCMD.send(Commande.CMD_OPEN_W,port);
-			mString.send(fname,port);
-			filePath = mString.reception(port);
-			fileWrite = new File(filePath);
-			fos = new FileOutputStream(fileWrite,true);
-			oos = new ObjectOutputStream(fos);
-			OpenW = true;
-
-			KVs = new ArrayList<KV>();
-			oos.writeObject(Type.KV);
-
-			OpenR = true;
-		}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// Si mode écriture :
+			if (mode == OpenMode.W) {
+				System.out.println("ouverture en écriture du fichier : " + fname);
+				// Ouvrir le fichier en écriture
+				file.setWritable(true);
+				fw = new FileWriter(file);
+				// Mettre OpenW à vrai pour signaler l'ouverture du descripteur en écriture
+				OpenW = true;
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -93,14 +77,13 @@ public class FormatLine implements Format {
 		//mCMD.send(Commande.CMD_CLOSE,port);
 		// fermer sock normalement je pense ou descripteurs
 		try {
+			// Si le fichier a été ouvert en lecture, fermer le descripteur de lecture
 			if (OpenR) {
-				ois.close();
-				fis.close();
+				fr.close();
 			}
+			// Si le fichier a été ouvert en écriture, fermer le descripteur d'écriture
 			if (OpenW) {
-				oos.writeObject(KVs);
-				oos.close();
-				fos.close();
+				fw.close();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -110,36 +93,48 @@ public class FormatLine implements Format {
 
 	@Override
 	public KV read() {
-		// Créer KV index + ligne à index
-		KV kv = new KV();
-
-		kv =new KV(Integer.toString((int) index), lines.get((int)index - 1));
+		KV kv = null;
+		// Si l'index est inférieur au nombre d'éléments du tableau de lignes
+		if (index <= (lines.length)) {
+			// Créer un KV ayant pour clé le numéro d'une ligne (index) et pour valeur le contenu de cette ligne (lines[index-1])
+			kv = new KV(Integer.toString((int) index), lines[(int) index - 1]);
+		}
+		// Incrémenter l'index
 		index++;
-
 		return kv;
 	}
 
 	@Override
 	public void write(KV record) {
-		KVs.add(record);
-
+		try {
+			// Ecrire la ligne du KV en paramètre
+			fw.write(record.v);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
+	// Obtenir l'index courant
 	public long getIndex() {
 		return this.index;
-
 	}
 
 	@Override
+	// Obtenir le nom du fichier traiter
 	public String getFname() {
 		return this.fname;
 
 	}
 
 	@Override
-	public void setFname(String fname) {
-		this.fname = fname;
+	// Modifier le nom du fichier traiter
+	public void setFname(String newFname) {
+		File file = new File(fname);
+		this.fname = newFname;
+		file.renameTo(new File(file.getPath()+File.separator+newFname));
+		
 	}
 	
 }

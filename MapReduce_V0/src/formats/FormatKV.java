@@ -22,59 +22,53 @@ public class FormatKV implements Format{
     private boolean OpenR = false;
     private boolean OpenW = false;
 
-    private String filePath;
 
-    private ArrayList<KV> KVstoRead;
-    private ArrayList<KV> KVstoWrite;
-
+    private ArrayList<Object> KVstoRead;
+    private ArrayList<Object> KVstoWrite;
+    private int port;
         // soit Message m mais attention, ou un par type ???
-        private Message<Commande> mCMD;
-        private Message<String> mString;
 
-        private int port;
         private long index = 1;
         private String fname;	// nom du fichier
 
-        public FormatKV(String fname, int port) {
+        public FormatKV(String fname) {
             // Mettre le port en  parametre
             this.fname = fname;
-            this.port = port;
-            this.mCMD = new Message<Commande>();
-            this.mString = new Message<String>();
+
         }
 
         public void open(OpenMode mode) {
 
             try {
+            	Message m = new Message();
+            	m.openClient(port);
                 // Creation fichier resultat dans Format ou serveur si ouverture a chaque fois, creer linesdans read?
                 if (mode == OpenMode.R) {
                     // Récupèrer contenu fichier et le découper en lignes
-                    mCMD.send(Commande.CMD_OPEN_R, port);
-                    mString.send(fname,port);		//précisez le fichier dont on veut obtenir le path
-                    //  récupérer PATH du fichier dans le server,ou daemon et serveur au meme endroit?
-                    filePath = mString.reception(port);
-                    fileRead = new File(filePath);
+
+
+                    fileRead = new File(fname);
+
                     fis = new FileInputStream(fileRead);
                     ois = new ObjectInputStream(fis);
-                    Type fmt = (Type) ois.readObject();
-                    KVstoRead = (ArrayList<KV>) ois.readObject();
+                    KVstoRead = (ArrayList<Object>) ois.readObject();
+                    Type fmt = (Type) KVstoRead.get(0);
 
 
                 }
                 if (mode == OpenMode.W) {
                     // Créer le fichier résultat dans format ou serveur?
-                    mCMD.send(Commande.CMD_OPEN_W, port);
-                    mString.send(fname, port);
-                    filePath = mString.reception(port);
-                    fileWrite = new File(filePath);
+
+                    fileWrite = new File(fname);
                     fos = new FileOutputStream(fileWrite,true);
                     oos = new ObjectOutputStream(fos);
                     OpenW = true;
 
-                    KVstoWrite = new ArrayList<KV>();
-                    oos.writeObject(Type.KV);
+                    KVstoWrite = new ArrayList<Object>();
+                    KVstoWrite.add(Type.KV);
                     OpenW = true;
                 }
+                m.close();
             } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -94,7 +88,7 @@ public class FormatKV implements Format{
                     fis.close();
                 }
                 if (OpenW) {
-                    oos.writeObject(KVstoRead);
+                    oos.writeObject(KVstoWrite);
                     oos.close();
                     fos.close();                }
             } catch (IOException e) {
@@ -108,7 +102,11 @@ public class FormatKV implements Format{
             // Créer KV index + ligne à index
 
             index++;
-            return KVstoRead.get((int)index-1);
+            if (index < KVstoRead.size() ) {
+                return (KV) KVstoRead.get((int) index );
+            }else {
+                return null;
+            }
         }
 
         @Override

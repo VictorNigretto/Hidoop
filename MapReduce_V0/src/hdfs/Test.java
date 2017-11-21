@@ -11,6 +11,7 @@ import formats.Format;
 import formats.Format.Type;
 import formats.KV;
 import formats.FormatLine;
+import formats.Format.Commande;
 
 public class Test {
 	

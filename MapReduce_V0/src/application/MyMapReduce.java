@@ -51,12 +51,11 @@ public class MyMapReduce implements MapReduce {
 	
 	// Avec un paramètre : le nom du fichier !
 	public static void main(String args[]) {
-		System.out.println("Hey !!!!!!!!!!!!!!!!!!!!!!!!!!");
 		// On crée un Job
 		// Qu'est-ce qu'un Job ?
 		// C'est l'application qui va s'occuper de lancer tous les maps
 		Job j = new Job();
-		// On lui dit le format et le nom du fichier qui nous intéresse
+		// On lui dit le format et le nom du fichier qui nous intéressent
         j.setInputFormat(Format.Type.LINE);
         j.setInputFname(args[0]);
         

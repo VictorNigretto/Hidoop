@@ -2,6 +2,7 @@
 
 package hdfs;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -15,8 +16,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import util.Message;
-import util.Message.Commande;
+
 import formats.Format;
+import formats.Format.Commande;
 import formats.Format.Type;
 import formats.KV;
 
@@ -34,184 +36,118 @@ public class HdfsClient {
     public static void HdfsDelete(String hdfsFname) {
 		int nbServer = servers.length;
 		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
-		Message<Commande> mCMD = new Message<Commande>();
-		Message<String> mString = new Message<>();
+		Message m = new Message();
 
-		for (int i = 0; i < nbServer; i++) {	
-			mCMD.send(Commande.CMD_DELETE, servers[i]);
-			mString.send(hdfsFname  + String.valueOf(i),servers[i]);
+		for (int i = 0; i < nbServer; i++) {
+			m.openClient(servers[i]);
+			m.send(Commande.CMD_DELETE);
+			m.send(hdfsFname  + String.valueOf(i));
+			m.close();
 			System.out.println("envoyee au serveur " + i );
 		}
 	}
 	
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
     	try {
-    		Message<String> mString = new Message<String>();
-			Message<Commande> mCMD = new Message<Commande>();
-			Message<Type> mType = new Message<Type>();
+    		Message m = new Message();
 
 			File fichier = new File(localFSSourceFname);
 
 			int nbServer = servers.length;
 
-			if (fmt == Format.Type.LINE) {
-				Message <ArrayList<String>> mStringlist = new Message<ArrayList<String>>();
+			System.out.println("On est rentré dans HDFS write !");
+			if (fmt == Format.Type.LINE || fmt == Format.Type.KV) {
+				//On a donc un format line ou un format KV, dans les deux cas le fichier est écrits sous forme de fichier text 
 				
-				System.out.println("Demande d'écriture d'un fichier (LINE)...");
-
+				//Creation des buffers associés au fichier lue
+				System.out.println("Demande d'écriture d'un fichier ...");
 				FileReader fr = new FileReader(fichier);
 				BufferedReader br = new BufferedReader(fr);
-
-				//Lire ligne par ligne et compter
-				int indLine = 1;
-				while (br .readLine() != null) {
-					indLine++;
+				
+				//mise en place d'une marque au début du fichier (8192 est la taille max du BufferedReader)
+				br.mark(8192);
+				
+				//Lire le fichier une première fois pour pouvoir compter le nombre de lignes 
+				int nbLine = 0;
+				while (br.readLine() != null) {
+					nbLine++;
 				}
-				int nbLine = indLine - 1;
 
+				//Retour à la marque (placée au début du fichier
+				br.reset();
+
+				//Aides pour calculer le nombre de lignes envoyées à chaque serveurs
 				int quotient = nbLine/nbServer;
 				int reste = nbLine%nbServer;
 
-				br.close();
-				fr.close();
-				fr = new FileReader(fichier);
-				br = new BufferedReader(fr);
-
-				// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de String contenant une seule String
+				
+				//Envoie de ces lignes à chaque serveurs
 				for (int i=0 ; i<nbServer ; i++) {
-					ArrayList<String> listS = new ArrayList<String>();
+					//Calcul du nombre de lignes envoyées au serveur
 					int nbLineSent = quotient;
 					if (reste != 0) {
 						nbLineSent++;
 						reste--;
 					}
+					//Envoie des lignes au serveur
+					String str = new String();
 					for (int j = 0 ; j<nbLineSent ; j++) {
-						listS.add(br.readLine());
+						str += br.readLine() + "\n";
 					}
-
-					mCMD.send(Commande.CMD_WRITE, servers[i]);
+					m.openClient(servers[i]);
+					m.send(Commande.CMD_WRITE);
 					System.out.println("envoyée au serveur " + i);
-					mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-					mType.send(Type.LINE, servers[i]);
-					mStringlist.send(listS, servers[i]);
+					m.send(fichier.getName() + String.valueOf(i));
+					m.send(fmt);
+					m.send(str);
+					m.close();
+					
 					System.out.println("fragment envoyé au serveur " + i);
+
 				}
 				br.close();
 				fr.close();
-				} else if (fmt == Format.Type.KV) {
-					Message<ArrayList<KV>> mKVlist = new Message<ArrayList<KV>>();
-
-				//Lire KV par KV et compter
-					System.out.println("Demande d'écriture d'un fichier (KV)...");
-
-					int indKV = 1;
-
-					FileInputStream fis = new FileInputStream (localFSSourceFname);
-					ObjectInputStream ois = new ObjectInputStream (fis);
-					KV unKV;
-
-					while (fis.available() > 0) {
-						unKV = (KV) ois.readObject();
-						System.out.println(unKV.toString());
-						indKV++;
-					}
-					System.out.println(indKV);
-
-					int nbKV = indKV - 1;
-
-					int quotient = nbKV/nbServer;
-					int reste = nbKV%nbServer;
-
-					ois.close();
-					fis.close();
-					FileInputStream fis2 = new FileInputStream (localFSSourceFname);
-					ObjectInputStream ois2 = new ObjectInputStream (fis2);
-
-					// Envoyer à chaque serveur, un fragment du fichier sous la forme d'une liste de KV
-					for (int i=0 ; i<nbServer ; i++) {
-						ArrayList<KV> KVlist = new ArrayList<KV>();
-						int nbKVSent = quotient;
-
-						if (reste != 0) {
-							nbKVSent++;
-							reste --;
-						}
-
-						for (int j = 0 ; j<nbKVSent ; j++) {
-							KV newKV = (KV) ois2.readObject();
-							System.out.println(newKV.toString());
-							KVlist.add(newKV);
-
-						}
-						mCMD.send(Commande.CMD_WRITE, servers[i]);
-						System.out.println("envoyée au serveur " + i);
-						mString.send(fichier.getName() + String.valueOf(i), servers[i]);
-						mType.send(Type.KV, servers[i]);
-						mKVlist.send(KVlist, servers[i]);
-						System.out.println("fragment envoyé au serveur " + i);
-					}
-					ois2.close();
-					fis2.close();
+				} else {
+					// On en reconnait pas le format
+					System.out.println("Le format indiqué n'est pas reconnu par hdfs");
 				}
-    	} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
     	
     }
 
     public static void HdfsRead(String hdfsFname, String localFSDestFname) {
 		System.out.println("Demande de lecture d'un fichier ...");
-		Message<String> mString = new Message<String>();
-		Message<Commande> mCMD = new Message<Commande>();
-		Message<Type> mType = new Message<Type>();
-		Message<ArrayList<Object>> mList = new Message<ArrayList<Object>>();
+		Message m = new Message();
 		File file = new File(localFSDestFname);
 		try {
-			
-
+			// On récupère pour chaque serveurs les fragments de fichier et on écrit à la suite,
+			// les lignes (ou les kv) dans un fichier local
 			for (int i = 0; i < servers.length; i++) {
-				mCMD.send(Commande.CMD_READ, servers[i]);
+				
+				//On envoie la commande au serveur et celui-ci renvoie le type et 
+				//la chaine de caractères correspondant à son fragment.
+				m.openClient(servers[i]);
+				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
-				mString.send(hdfsFname + String.valueOf(i), servers[i]);
-				Type fmt = mType.reception(servers[i]);
-				ArrayList<Object> listReceived = mList.reception(servers[i]);
-
-				for (Object o : listReceived) {
-
-
-					switch (fmt) {
-						case LINE:
-							FileWriter fw = new FileWriter(file,true);
-							fw.write(o.toString() + "\n");				
-							fw.close();						
-							break;
-						case KV:
-							FileOutputStream fos = new FileOutputStream(file, true);
-							ObjectOutputStream oos = new ObjectOutputStream(fos);
-
-							oos.writeObject(o);
-							oos.close();
-							fos.close();
-							break;
-						default:
-							break;
-					}
-				}
+				m.send(hdfsFname + String.valueOf(i));
+				String strReceived = (String) m.receive();
+				m.close();
+								
+				//on rajoute donc les lignes reçu dans le fichier local à la fin
+				FileWriter fw = new FileWriter(file, true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				bw.write(strReceived, 0, strReceived.length());
+			
+				bw.close();
+				fw.close();
 			}
 			System.out.print("Ecriture des données dans un fichier local ...");
-			
 			System.out.println("données écrites");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 
 		}
