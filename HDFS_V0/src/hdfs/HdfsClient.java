@@ -39,6 +39,7 @@ public class HdfsClient {
 		Message m = new Message();
 
 		for (int i = 0; i < nbServer; i++) {
+			//On supprime le fichier sur tous les serveurs
 			m.openClient(servers[i]);
 			m.send(Commande.CMD_DELETE);
 			m.send(hdfsFname  + String.valueOf(i));
@@ -138,20 +139,16 @@ public class HdfsClient {
 								
 				//on rajoute donc les lignes reçu dans le fichier local à la fin
 				FileWriter fw = new FileWriter(file, true);
-				BufferedWriter bw = new BufferedWriter(fw);
-				bw.write(strReceived, 0, strReceived.length());
+				fw.write(strReceived, 0, strReceived.length());
 			
-				bw.close();
 				fw.close();
 			}
 			System.out.print("Ecriture des données dans un fichier local ...");
 			System.out.println("données écrites");
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-
 		}
+	
 	}
 
 
