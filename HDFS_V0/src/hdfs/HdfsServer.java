@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -47,10 +48,13 @@ public class HdfsServer {
 
 				case CMD_READ:
 					//On recoit une commande de lecture
-					System.out.print(" Demande de lecture reçue ...");
+					System.out.println(" Demande de lecture reçue ... ");
+					
 					String fname = (String) m.receive();
 					
+					try {
 					FileReader fr = new FileReader(fname);
+					
 					BufferedReader br = new BufferedReader(fr);
 					
 					//Creation de la chaine de caractères qui sera envoyée
@@ -64,7 +68,9 @@ public class HdfsServer {
 					}
 					m.send(strToSend);
 					System.out.println("fragment du fichier envoyé");
-					
+					} catch (FileNotFoundException fnfe) {
+						System.out.println("fichier lu non existant");
+					}
 					break;
 					
 				case CMD_WRITE:
@@ -77,13 +83,11 @@ public class HdfsServer {
 					//Creation du fichier en local (dans le serveur)
 					File file = new File(fname);
 					FileWriter fw = new FileWriter(fname);
-					BufferedWriter bw = new BufferedWriter(fw);
 
 					// Reception de la chaine de caractères correspondant au fragment
 					String strReceived = (String) m.receive();
-					bw.write(strReceived, 0, strReceived.length()-1);
+					fw.write(strReceived, 0, strReceived.length()-1);
 					//Fermeture du fichier
-					bw.close();
 					fw.close();
 					System.out.println("fragment du fichier enregistré");
 					break;
