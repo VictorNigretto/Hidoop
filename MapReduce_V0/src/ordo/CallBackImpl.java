@@ -16,7 +16,6 @@ public class CallBackImpl extends UnicastRemoteObject implements CallBack {
     @Override
     // Permet à un démons de confier qu'il a bien terminé son traitement de map
     public void confirmFinishedMap() throws InterruptedException, RemoteException {
-    	System.out.println("Un map vient de se finir.");
         nbMapsFinished.release();
     }
 
@@ -25,7 +24,7 @@ public class CallBackImpl extends UnicastRemoteObject implements CallBack {
         for(int i = 0; i < nb; i++) {
 			try {
 				nbMapsFinished.acquire();
-		    	System.out.println((i+1) + "maps se sont finis.");
+		    	System.out.println((i+1) + " maps se sont finis.");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

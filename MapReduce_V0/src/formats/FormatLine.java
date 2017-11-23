@@ -119,9 +119,10 @@ public class FormatLine implements Format {
 	@Override
 	// Modifier le nom du fichier traiter
 	public void setFname(String newFname) {
-		File file = new File(fname);
+		this.fname = newFname;
+		/*File file = new File(fname);
 		file.renameTo(new File(file.getAbsolutePath().replaceAll(fname, newFname)));
-		this.fname = newFname;	
+		this.fname = newFname;*/	
 	}
 	
 }

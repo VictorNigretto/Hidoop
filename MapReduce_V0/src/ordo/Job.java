@@ -56,7 +56,7 @@ public class Job implements JobInterface {
 		this.inputFormat = inputFormat;
 		this.inputFName = inputFName;
 
-		this.outputFName = inputFName + "-res";
+		this.outputFName = inputFName + "-final";
 		this.interFName = inputFName + "-inter";
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
@@ -72,7 +72,9 @@ public class Job implements JobInterface {
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
+    	
     	System.out.println("Lancement du job ...");
+    	
     	
 		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
 		Format input, inter, output;
@@ -84,6 +86,7 @@ public class Job implements JobInterface {
 		inter = new FormatKV(interFName);
 		output = new FormatKV(outputFName);
 
+		
     	// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
@@ -98,8 +101,9 @@ public class Job implements JobInterface {
 				e.printStackTrace();
 			}
     	}
-    	System.out.println("OK");
+    	System.out.println("OK\n");
 
+    	
     	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
 		CallBack cb = null;
 		try {
@@ -108,88 +112,60 @@ public class Job implements JobInterface {
 			e.printStackTrace();
 		}
 
+		
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
-		int index = 0;
-		String nomOriginal = inter.getFname();
-		for(Daemon d : demons) {
+		for(int i = 0; i < this.numberOfMaps; i++) {
+			Daemon d = demons.get(i);
 			
-			inter.setFname(nomOriginal + index);
+			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
+			Format inputTmp;
+	        if(inputFormat == Format.Type.LINE) { // LINE
+	        	inputTmp = new FormatLine(input.getFname() + "" + i);
+			} else { // KV
+	        	inputTmp = new FormatKV(input.getFname() + "" + i);
+			}
+	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
 
-			System.out.println(inter.getFname());
-			index++;
 			// on appelle le map sur le démon
-			// on utilise le même format input et le même format output pour chacun
-			// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
-			// sur les différents démons, que s'effectuera le chargement des différents chunks
-			MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
-			//PROBLEME : on écrit toujours sur le meme fichier meme si on change son nom
+			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
-			inter.setFname(nomOriginal);
 		}
-    	System.out.println("OK");
+    	System.out.println("OK\n");
 
+    	
 		// Puis on attends que tous les démons aient finis leur travail
     	System.out.println("Attente de la confirmation des Daemons ...");
 		try {
 			cb.waitFinishedMap(numberOfMaps);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	System.out.println("OK");
+    	System.out.println("OK\n");
 
+    	
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
-		Format resReduce;
-		if(inputFormat == Format.Type.LINE) {
-			resReduce = new FormatLine(input.getFname() + "-res");
-		} else {
-			resReduce = new FormatKV(input.getFname() + "-res");
-		}
-		//System.out.println("fname : " + inter.getFname());
+		Format resReduce = new FormatKV(input.getFname() + "-res");
+		HdfsRead(inter.getFname(), resReduce.getFname());
+    	System.out.println("OK\n");
 		
-		index = 0;
-		for (Daemon d : demons){
-			HdfsRead(inter.getFname() + index, resReduce.getFname());
-			index++;
-    	}
-    	System.out.println("OK");
+    	
+		// On ferme notre fichier avant de le réouvrir
+		resReduce.close();
+		resReduce.open(Format.OpenMode.R);
 
     	// On veut transformer ce fichier en un format local
-        output.open(Format.OpenMode.R);
+        output.open(Format.OpenMode.W);
 
 		// Puis on applique le reduce sur le résultat concaténé des maps
 		// On stock le résultat dans l'output
     	System.out.println("Lancement du Reduce ...");
     	mr.reduce(resReduce, output);
-    	System.out.println("OK");
-
-		// On extrait une liste de notre format output pour pouvoir le trier
-    	System.out.println("Écriture du fichier résultat en local ...");
-		List<KV> listeTriee = new ArrayList<>();
-    	KV kv;
-    	while((kv = output.read()) != null) {
-    		listeTriee.add(kv);
-		}
-    	// On peut rajouter un comparateur pour trier notre résultat
-		//listeTriee.sort((Comparator<? super KV>) sortComparator);
-
-		// Puis on l'écrit dans le fichier de sortie
-		File fOutput = new File(outputFName);
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(fOutput));
-			for(KV ligne : listeTriee) {
-				bw.write(ligne.k);
-				bw.write(KV.SEPARATOR);
-				bw.write(ligne.v);
-				bw.newLine();
-			}
-			bw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-    	System.out.println("OK");
+    	output.close();
+    	System.out.println("OK\n");
+    	
+    	
     	System.out.println("Fin du job, merci pour votre patience :)");
 	}
 	
@@ -218,7 +194,7 @@ public class Job implements JobInterface {
     
     public void setInputFname(String fname){
     	this.inputFName = fname;
-    	this.outputFName = fname + "-res";
+    	this.outputFName = fname + "-final";
 		this.interFName = fname + "-inter";
     }
     
