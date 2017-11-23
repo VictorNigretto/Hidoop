@@ -134,8 +134,9 @@ public class HdfsClient {
 				m.openClient(servers[i]);
 				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
-				//m.send(hdfsFname + String.valueOf(i));
-				m.send(hdfsFname);
+				System.out.println("nom du fichier envoyé " + hdfsFname);
+
+				m.send(hdfsFname + String.valueOf(i));
 				String strReceived = (String) m.receive();
 				m.close();
 								

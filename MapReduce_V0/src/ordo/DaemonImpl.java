@@ -35,15 +35,9 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		System.out.println("Lancement du Map ...");
 		m.map(reader, writer);
 		System.out.println("OK");
-
-		System.out.println("during : reader name : " + reader.getFname());
-		System.out.println("during : writer name : " + writer.getFname());
 		
 		reader.close();
 		writer.close();
-		System.out.println("after : reader name : " + reader.getFname());
-		System.out.println("after : writer name : " + writer.getFname());
-
 		try {
 			cb.confirmFinishedMap();
 		} catch (InterruptedException e) {
