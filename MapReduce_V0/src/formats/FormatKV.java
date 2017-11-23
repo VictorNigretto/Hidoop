@@ -27,7 +27,7 @@ public class FormatKV implements Format{
             this.fname = fname;
         }
 
-    	public void open(formats.Format.OpenMode mode)  {
+    	public void open(OpenMode mode)  {
     		try {
     			// Récupérer fichier "fname"
     			File file = new File(fname);

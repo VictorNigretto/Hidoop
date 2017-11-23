@@ -1,6 +1,11 @@
 package application;
 
+import hdfs.HdfsClient;
+import hdfs.HdfsServer;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Scanner;
 
 // Une ébauche pour pouvoir lancer les différentes applications
@@ -9,50 +14,187 @@ public class ServiceHidoop {
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
+        String choixService = null;
+        String actionHdfs = null;
         String file = null;
-        String mapReduce = null;
 
-        // Récupérer les informations
+        // Texte d'introduction
         System.out.println("Bienvenue dans le Service Hidoop.");
-        System.out.println("Vous pourrez ici lancer vos propres Map/Reduces sur vos propres fichiers.");
-        System.out.println("Entrez le nom du fichier à traiter (devant être stocké sur HDFS) :");
-        file = sc.nextLine();
-        System.out.println("Entrez le nom du fichier contenant le Map/Reduce (devant être stocké en local) :");
-        System.out.println("(Le fichier doit être compilé, et écrit sans le \".class\")");
-        mapReduce = sc.nextLine();
+        System.out.println("Vous pouvez soit utiliser le service HDFS :");
+        System.out.println("permettant d'écrire, lire et supprimer des fichiers sur le serveur HDFS.");
+        System.out.println("Vous pouvez sinon utiliser le service MapReduce :");
+        System.out.println("permettant de lancer vos propres Map/Reduces sur vos propres fichiers.");
+        System.out.println("(tous ces services sont pour le moment exclusiement utilisés en local)");
 
-        // Lancer le map/reduce sur le bon fichier
-        /*
-        System.out.println();
-        System.out.println("Compilation ...");
-        String[] compiler = new String[2];
-        compiler[0] = "javac";
-        compiler[1] = mapReduce + ".java";
-        try {
-            Runtime.getRuntime().exec(compiler);
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Choix HDFS / MapReduce
+        do {
+            System.out.println("Choisissez votre service à utliser :");
+            System.out.println("(hdfs ou mapreduce)");
+            System.out.println("");
+            choixService = sc.nextLine();
+        } while (!choixService.equals("hdfs") && !choixService.equals("mapreduce")) ;
+
+        // si HDFS
+        if(choixService.equals("hdfs")) {
+            System.out.println("Vous avez choisi Hdfs");
+            System.out.println("");
+
+            // Choix action HDFS
+            do {
+                System.out.println("Voulez-vous écrire, lire ou supprimer un fichier ?");
+                System.out.println("(write, read, delete)");
+                actionHdfs = sc.nextLine();
+            } while (!actionHdfs.equals("write") && !actionHdfs.equals("read") && !actionHdfs.equals("delete")) ;
+
+            if(actionHdfs.equals("write")) {
+                System.out.println("Vous avez choisi d'écrire.");
+                System.out.println("");
+
+                // Choix du fichier
+                System.out.println("Quel fichier voulez-vous écrire ?");
+                file = sc.nextLine();
+
+                // Choix du format
+                String format = null;
+                do {
+                    System.out.println("En quel format est écrit ce fichier ?");
+                    System.out.println("(line, kv)");
+                    format = sc.nextLine();
+                } while (!format.equals("line") && !format.equals("kv")) ;
+
+                // Lancer l'opération
+                System.out.println("Ecriture ...");
+                    // Lancer les Serveurs
+                    String[] cmdServ1 = {"6666"};
+                    String[] cmdServ2 = {"5555"};
+                    String[] cmdServ3 = {"4444"};
+                    new ServerRunner(cmdServ1).start();
+                    new ServerRunner(cmdServ2).start();
+                    new ServerRunner(cmdServ3).start();
+                    // Lancer l'opération
+                    String[] cmd = {"write", format, file};
+                    HdfsClient.main(cmd);
+                System.out.println("Ecriture terminée !");
+
+            } else if (actionHdfs.equals("read")) {
+                System.out.println("Vous avez choisi de lire.");
+                System.out.println("");
+
+                // Choix du fichier
+                System.out.println("Quel fichier voulez-vous lire ?");
+                file = sc.nextLine();
+
+                // Choix de la sortie
+                String fileOutput = null;
+                System.out.println("Quel est le nom du fichier résultat ?");
+                fileOutput = sc.nextLine();
+
+                // Lancer l'opération
+                System.out.println("Lecture ...");
+                    // Lancer les Serveurs
+                    String[] cmdServ1 = {"6666"};
+                    String[] cmdServ2 = {"5555"};
+                    String[] cmdServ3 = {"4444"};
+                    new ServerRunner(cmdServ1).start();
+                    new ServerRunner(cmdServ2).start();
+                    new ServerRunner(cmdServ3).start();
+                    // Lancer l'opération
+                    String[] cmd = {"read", file, fileOutput};
+                    HdfsClient.main(cmd);
+                System.out.println("Lecture terminée !");
+
+            } else {
+                System.out.println("Vous avez choisi de supprimer.");
+                System.out.println("");
+
+                // Choix du fichier
+                System.out.println("Quel fichier voulez-vous supprimer ?");
+                file = sc.nextLine();
+
+                // Lancer l'opération
+                System.out.println("Suppression ...");
+                    // Lancer les Serveurs
+                    String[] cmdServ1 = {"6666"};
+                    String[] cmdServ2 = {"5555"};
+                    String[] cmdServ3 = {"4444"};
+                    new ServerRunner(cmdServ1).start();
+                    new ServerRunner(cmdServ2).start();
+                    new ServerRunner(cmdServ3).start();
+                    // Lancer l'opération
+                    String[] cmd = {"delete", file};
+                    HdfsClient.main(cmd);
+                System.out.println("Suppression terminée !");
+            }
+
+        // si Map Reduce
+        } else {
+            System.out.println("Vous avez choisi MapReduce");
+            System.out.println("");
+
+            /*
+            // On récupère le MapReduce
+            System.out.println("Quel fichier contenant le Map/Reduce voulez-vous exécuter ?");
+            System.out.println("(le fichier doit être compilé et sans l'extension \".class\")");
+            String fileMr = sc.nextLine();
+            */
+
+            // On récupère le fichier sur lequel le lancer
+            System.out.println("Sur quel fichier voulez-vous appliquer MyMapReduce ?");
+            file = sc.nextLine();
+
+            // Lancer l'opération
+            System.out.println("Maping/Reducing ...");
+                // Lancer les Serveurs
+                String[] cmdServ1 = {"6666"};
+                String[] cmdServ2 = {"5555"};
+                String[] cmdServ3 = {"4444"};
+                new ServerRunner(cmdServ1).start();
+                new ServerRunner(cmdServ2).start();
+                new ServerRunner(cmdServ3).start();
+                // Lancer les Daemons
+                String[] cmdDaemon1 = {"Succube"};
+                String[] cmdDaemon2 = {"Lucifer"};
+                String[] cmdDaemon3 = {"Cthun"};
+                new DaemonRunner(cmdDaemon1).start();
+                new DaemonRunner(cmdDaemon2).start();
+                new DaemonRunner(cmdDaemon3).start();
+                // Lancer le MapReduce !
+                // Pour le moment on va le lancer à la main ! :D
+                //String [] cmdMr = {"toto.txt"};
+                //MyMapReduce.main(cmdMr);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Vous pouvez lancer votre map manuellement !");
+            //System.out.println("Maping/Reducing terminée !");
         }
-        */
-
-        System.out.println("Éxécution ...");
-        String[] run = new String[3];
-        run[0] = "java";
-        run[1] = mapReduce;
-        run[2] = file;
-        try {
-            Runtime.getRuntime().exec(run);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
+
+	private static String executeCommand(String command) {
+		StringBuffer output = new StringBuffer();
+		Process p;
+
+		try {
+		    // On lance la commande
+			p = Runtime.getRuntime().exec(command);
+
+			// On récupère sa sortie
+			p.waitFor();
+			BufferedReader reader =
+                            new BufferedReader(new InputStreamReader(p.getInputStream()));
+                        String line = "";
+			while ((line = reader.readLine())!= null) {
+				output.append(line + "\n");
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return output.toString();
+	}
 }
-
-
-
-
-
 
 
 

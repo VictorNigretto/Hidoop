@@ -61,7 +61,8 @@ public class MyMapReduce implements MapReduce {
         
         // Pour le temps
         long t1 = System.currentTimeMillis();
-        
+
+        System.out.println("On a lancé le MyMapReduce !");
 		j.startJob(new MyMapReduce()); // on devra exécuter le programme principal dans startJob
 		
 		// On affiche le temps qu'à pris le MapReduce
