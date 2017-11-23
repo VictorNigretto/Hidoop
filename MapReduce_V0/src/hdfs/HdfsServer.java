@@ -49,24 +49,22 @@ public class HdfsServer {
 				case CMD_READ:
 					//On recoit une commande de lecture
 					System.out.println(" Demande de lecture reçue ... ");
-					
 					String fname = (String) m.receive();
-					System.out.println("fname : " + fname);
 					
 					try {
+					// Ouverture du fichier en lecture
 					FileReader fr = new FileReader(fname);
-					
 					BufferedReader br = new BufferedReader(fr);
 					
 					//Creation de la chaine de caractères qui sera envoyée
-					
 					String strToSend = new String();
-					
 					String line = br.readLine() ;
 					while (line != null ) {
 						strToSend += line + "\n";
 						line = br.readLine() ;
 					}
+					
+					// Envoie de la chaine de caractère 
 					m.send(strToSend);
 					System.out.println("fragment du fichier envoyé");
 					} catch (FileNotFoundException fnfe) {
@@ -76,6 +74,7 @@ public class HdfsServer {
 					
 				case CMD_WRITE:
 					System.out.print(" Demande d'écriture reçue ...");
+					
 					//On recoit une commande d'écriture avec le nom du fichier
 					// et le type du fichier
 					fname = (String) m.receive();
@@ -88,6 +87,7 @@ public class HdfsServer {
 					// Reception de la chaine de caractères correspondant au fragment
 					String strReceived = (String) m.receive();
 					fw.write(strReceived, 0, strReceived.length()-1);
+					
 					//Fermeture du fichier
 					fw.close();
 					System.out.println("fragment du fichier enregistré");
@@ -105,7 +105,6 @@ public class HdfsServer {
 					break;
 
 			}
-		//m.close(ss); ?
 		}
 
 	}

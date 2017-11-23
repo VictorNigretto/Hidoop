@@ -26,6 +26,12 @@ import formats.KV;
 public class HdfsClient {
 	
 	private static int servers[] = {6666,5555,4444};
+	// Version répartie
+	//private static String ordis[] = {"omble", "truite", "daurade" };
+	private static String ordis[] = {"truite", "omble", "daurade" };
+
+	// Version locale
+	//private static String ordis[] = {"localhost", "localhost", "localhost" };
 
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");
@@ -40,7 +46,7 @@ public class HdfsClient {
 
 		for (int i = 0; i < nbServer; i++) {
 			//On supprime le fichier sur tous les serveurs
-			m.openClient(servers[i]);
+			m.openClient(ordis[i],servers[i]);
 			m.send(Commande.CMD_DELETE);
 			m.send(hdfsFname  + String.valueOf(i));
 			m.close();
@@ -94,11 +100,17 @@ public class HdfsClient {
 					for (int j = 0 ; j<nbLineSent ; j++) {
 						str += br.readLine() + "\n";
 					}
-					m.openClient(servers[i]);
+					m.openClient(ordis[i],servers[i]);
 					m.send(Commande.CMD_WRITE);
 					System.out.println("envoyée au serveur " + i);
+					
+					// On envoie le nom du fichier 
 					m.send(fichier.getName() + String.valueOf(i));
+					
+					// On envoie le format du fichier
 					m.send(fmt);
+					
+					// On envoie le contenu du fichier puis on ferme les sockets
 					m.send(str);
 					m.close();
 					
@@ -131,11 +143,9 @@ public class HdfsClient {
 				
 				//On envoie la commande au serveur et celui-ci renvoie le type et 
 				//la chaine de caractères correspondant à son fragment.
-				m.openClient(servers[i]);
+				m.openClient(ordis[i], servers[i]);
 				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
-				System.out.println("nom du fichier envoyé " + hdfsFname);
-
 				m.send(hdfsFname + String.valueOf(i));
 				String strReceived = (String) m.receive();
 				m.close();

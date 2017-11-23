@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import config.Project; // TODO ==> groupe Alexys/Marie
+//import config.Project; // TODO ==> groupe Alexys/Marie
 import formats.KV;
 
 // Fait la même chose que MyMapReduce mais sur un fichier local
@@ -28,7 +28,7 @@ public class Count {
             // On ouvre un fichier qui se trouve dans Project.PAHT + "data" + args[0] 
             // On lit tout le fichier
 			Map<String,Integer> hm = new HashMap<>();
-			LineNumberReader lnr = new LineNumberReader(new InputStreamReader(new FileInputStream(Project.PATH+"data/"+args[0])));
+			LineNumberReader lnr = new LineNumberReader(new InputStreamReader(new FileInputStream(/*Project.PATH+*/"data/"+args[0])));
 			
 			// Tant que il y a des lignes à lire dans le fichier
 			while (true) {
