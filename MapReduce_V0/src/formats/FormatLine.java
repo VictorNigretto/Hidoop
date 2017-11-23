@@ -86,7 +86,6 @@ public class FormatLine implements Format {
 		if (index <= (lines.size())) {
 			// Créer un KV ayant pour clé le numéro d'une ligne (index) et pour valeur le contenu de cette ligne (lines[index-1])
 			kv = new KV(Integer.toString((int) index), lines.get((int) index - 1));
-			System.out.println("Lecture de la ligne " + index);
 		}
 		// Incrémenter l'index
 		index++;
@@ -98,7 +97,6 @@ public class FormatLine implements Format {
 		try {		
 			// Ecrire la ligne du KV en paramètre
 			fw.write(record.v + "\n");
-			System.out.println("Ecriture d'un KV");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -121,9 +119,10 @@ public class FormatLine implements Format {
 	@Override
 	// Modifier le nom du fichier traiter
 	public void setFname(String newFname) {
-		File file = new File(fname);
+		this.fname = newFname;
+		/*File file = new File(fname);
 		file.renameTo(new File(file.getAbsolutePath().replaceAll(fname, newFname)));
-		this.fname = newFname;	
+		this.fname = newFname;*/	
 	}
 	
 }

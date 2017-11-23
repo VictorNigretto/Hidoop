@@ -110,14 +110,22 @@ public class Job implements JobInterface {
 
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
-		for(Daemon d : demons) {
+		//for(Daemon d : demons) {
+		String inputName = input.getFname();
+		String interName = inter.getFname();
+		for(int i = 0; i < this.numberOfMaps; i++) {
+			Daemon d = demons.get(i);
 			// on appelle le map sur le démon
 			// on utilise le même format input et le même format output pour chacun
 			// car par RMI on envoie des copies, et c'est lorsque les formats seront "open"
 			// sur les différents démons, que s'effectuera le chargement des différents chunks
+			input.setFname(inputName + i);
+			inter.setFname(interName + i);
 			MapRunner mapRunner = new MapRunner(d, mr, input, inter, cb);
 			mapRunner.start();
 		}
+		input.setFname(inputName);
+		inter.setFname(interName);
     	System.out.println("OK");
 
 		// Puis on attends que tous les démons aient finis leur travail

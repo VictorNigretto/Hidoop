@@ -27,6 +27,8 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	// Quand on a finit, on appelle le callback pour l'informer
 	public void runMap(Mapper m, Format reader, Format writer, CallBack cb) throws RemoteException {
 		// On ouvre le formats sur le démons, pour récupérer les chunks
+		System.out.println("before : reader name : " + reader.getFname());
+		System.out.println("before : writer name : " + writer.getFname());
 		reader.open(Format.OpenMode.R);
 		writer.open(Format.OpenMode.W);
 
@@ -34,8 +36,14 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		m.map(reader, writer);
 		System.out.println("OK");
 
+		System.out.println("during : reader name : " + reader.getFname());
+		System.out.println("during : writer name : " + writer.getFname());
+		
 		reader.close();
 		writer.close();
+		System.out.println("after : reader name : " + reader.getFname());
+		System.out.println("after : writer name : " + writer.getFname());
+
 		try {
 			cb.confirmFinishedMap();
 		} catch (InterruptedException e) {
