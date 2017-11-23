@@ -16,9 +16,9 @@ public class Message {
 	private ObjectInputStream ois;	// descripteur de lecture d'objets
 	
 	// Ouvre le Socket du client vers le serveurs et les descripteurs d'écriture et de lecture
-	public ObjectOutputStream openClient(int port) {
+	public ObjectOutputStream openClient( String ordi, int port) {
 		try {
-			 sock = new Socket("localhost",port);
+			 sock = new Socket(ordi,port);
 			 oos = new ObjectOutputStream(sock.getOutputStream());
 			 ois = new ObjectInputStream(sock.getInputStream());
 		} catch (UnknownHostException e) {

@@ -26,6 +26,7 @@ import formats.KV;
 public class HdfsClient {
 	
 	private static int servers[] = {6666,5555,4444};
+	private static String ordis[] = {"omble", "truite", "daurade" };
 
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");
@@ -40,7 +41,7 @@ public class HdfsClient {
 
 		for (int i = 0; i < nbServer; i++) {
 			//On supprime le fichier sur tous les serveurs
-			m.openClient(servers[i]);
+			m.openClient(ordis[i],servers[i]);
 			m.send(Commande.CMD_DELETE);
 			m.send(hdfsFname  + String.valueOf(i));
 			m.close();
@@ -94,7 +95,7 @@ public class HdfsClient {
 					for (int j = 0 ; j<nbLineSent ; j++) {
 						str += br.readLine() + "\n";
 					}
-					m.openClient(servers[i]);
+					m.openClient(ordis[i],servers[i]);
 					m.send(Commande.CMD_WRITE);
 					System.out.println("envoyée au serveur " + i);
 					m.send(fichier.getName() + String.valueOf(i));
@@ -131,7 +132,7 @@ public class HdfsClient {
 				
 				//On envoie la commande au serveur et celui-ci renvoie le type et 
 				//la chaine de caractères correspondant à son fragment.
-				m.openClient(servers[i]);
+				m.openClient(ordis[i], servers[i]);
 				m.send(Commande.CMD_READ);
 				System.out.println("envoyée au serveur " + i);
 				m.send(hdfsFname + String.valueOf(i));
