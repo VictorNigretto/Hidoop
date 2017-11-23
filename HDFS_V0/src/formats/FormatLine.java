@@ -11,6 +11,8 @@ import formats.Format.Type;
 
 public class FormatLine implements Format {
 
+
+	private static final long serialVersionUID = 1742753782732214897L;
 	private FileReader fr;
 	private BufferedReader br;
 	private FileWriter fw;
@@ -57,7 +59,6 @@ public class FormatLine implements Format {
 				OpenW = true;
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -76,7 +77,6 @@ public class FormatLine implements Format {
 				OpenW = false;
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -100,7 +100,6 @@ public class FormatLine implements Format {
 			// Ecrire la ligne du KV en paramètre
 			fw.write(record.v + "\n");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

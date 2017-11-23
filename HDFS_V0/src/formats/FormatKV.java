@@ -1,19 +1,16 @@
 package formats;
 
 
-import util.Message;
-
-
 import java.io.*;
 import java.util.ArrayList;
-
-import formats.Format.OpenMode;
 
 public class FormatKV implements Format{
 
 
 // Essayer de factoriser en classe générique classes envoi et reception
 
+
+	private static final long serialVersionUID = 7697812117877244092L;
 	private FileReader fr;
 	private BufferedReader br;
 	private FileWriter fw;

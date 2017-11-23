@@ -98,8 +98,14 @@ public class HdfsClient {
 					m.openClient(ordis[i],servers[i]);
 					m.send(Commande.CMD_WRITE);
 					System.out.println("envoyée au serveur " + i);
+					
+					// On envoie le nom du fichier 
 					m.send(fichier.getName() + String.valueOf(i));
+					
+					// On envoie le format du fichier
 					m.send(fmt);
+					
+					// On envoie le contenu du fichier puis on ferme les sockets
 					m.send(str);
 					m.close();
 					

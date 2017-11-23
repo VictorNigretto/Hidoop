@@ -3,7 +3,6 @@ package util;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -22,10 +21,9 @@ public class Message {
 			 oos = new ObjectOutputStream(sock.getOutputStream());
 			 ois = new ObjectInputStream(sock.getInputStream());
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			System.out.println(" Host non reconnu dans le OpenClient ");
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return oos;
@@ -38,10 +36,9 @@ public class Message {
 			 oos = new ObjectOutputStream(sock.getOutputStream());
 			 ois = new ObjectInputStream(sock.getInputStream());
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			System.out.println(" Host non reconnu dans le OpenServer ");
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return oos;
@@ -52,10 +49,9 @@ public class Message {
 		try {
 			oos.writeObject(objet);
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			System.out.println(" Un des hosts n'est pas reconnu lors de l'envoi  ");
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -66,13 +62,12 @@ public class Message {
 		try {
 			objet = (Object) ois.readObject();
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			System.out.println(" Un des hosts n'est pas reconnu lors de la reception  ");
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
+			System.out.println(" Objet non reconnu pendant la reception");
 			e.printStackTrace();
 		}
 		return objet;
@@ -85,7 +80,6 @@ public class Message {
 			oos.close();
 			sock.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
