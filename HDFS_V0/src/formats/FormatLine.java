@@ -68,10 +68,12 @@ public class FormatLine implements Format {
 			// Si le fichier a été ouvert en lecture, fermer le descripteur de lecture
 			if (OpenR) {
 				fr.close();
+				OpenR = false;
 			}
 			// Si le fichier a été ouvert en écriture, fermer le descripteur d'écriture
 			if (OpenW) {
 				fw.close();	
+				OpenW = false;
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -117,10 +119,8 @@ public class FormatLine implements Format {
 	}
 
 	@Override
-	// Modifier le nom du fichier traiter
+	// Ne modifie que l'attribut de FormatLine
 	public void setFname(String newFname) {
-		File file = new File(fname);
-		file.renameTo(new File(file.getAbsolutePath().replaceAll(fname, newFname)));
 		this.fname = newFname;	
 	}
 	
