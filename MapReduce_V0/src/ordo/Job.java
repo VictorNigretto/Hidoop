@@ -94,8 +94,8 @@ public class Job implements JobInterface {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + "//localhost/" + machines.get(i));
-				demons.add((Daemon) Naming.lookup("//localhost/" + machines.get(i)));
+    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
+				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
 				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();

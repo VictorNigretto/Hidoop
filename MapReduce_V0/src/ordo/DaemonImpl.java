@@ -55,8 +55,8 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
             //Registry registry = LocateRegistry.createRegistry(1099);
             //registry.rebind("//localhost:1099",  d);
-            System.out.println("//localhost:1099/" + ((DaemonImpl) d).getName());
-            Naming.rebind("//localhost:1099/" + ((DaemonImpl) d).getName(), d);
+            System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
+            Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
 			
 		} catch (Exception e) {

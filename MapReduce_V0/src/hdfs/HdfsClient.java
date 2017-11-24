@@ -28,10 +28,9 @@ public class HdfsClient {
 	private static int servers[] = {6666,5555,4444};
 	// Version répartie
 	//private static String ordis[] = {"omble", "truite", "daurade" };
-	private static String ordis[] = {"truite", "omble", "daurade" };
 
 	// Version locale
-	//private static String ordis[] = {"localhost", "localhost", "localhost" };
+	private static String ordis[] = {"localhost", "localhost", "localhost" };
 
     private static void usage() {
         System.out.println("Usage: java HdfsClient read <file>");

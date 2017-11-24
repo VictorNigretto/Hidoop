@@ -29,7 +29,11 @@ public class FormatLine implements Format {
 		this.fname = fname;
 	}
 	
+<<<<<<< HEAD
 	public void open(formats.Format.OpenMode mode)  {
+=======
+	public void open(OpenMode mode)  {
+>>>>>>> 490f03727897fc9a51a9c5ee160e9188f248194d
 		try {
 			// Récupérer fichier "fname"
 			File file = new File(fname);
