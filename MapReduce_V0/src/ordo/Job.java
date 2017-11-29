@@ -8,6 +8,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 
 import formats.*;
+import hdfs.NameNode;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
@@ -89,6 +90,10 @@ public class Job implements JobInterface {
 		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
+		NameNode nn = new NameNode();
+		machines = 
+		
+		
 		
     	// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
