@@ -29,6 +29,7 @@ public class Job implements JobInterface {
 	private Format.Type inputFormat;
 	private Format.Type outputFormat;
 	private String inputFName;
+	private String resReduceFName;
 	private String outputFName;
 	private SortComparator sortComparator;
 	private Format.Type interFormat;
@@ -58,6 +59,7 @@ public class Job implements JobInterface {
 
 		this.outputFName = inputFName + "-final";
 		this.interFName = inputFName + "-inter";
+		this.resReduceFName = inputFName + "-res";
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
 	}
@@ -77,13 +79,14 @@ public class Job implements JobInterface {
     	
     	
 		// Créons le format d'input, intermédiaire et d'output pour le client et tous les démons
-		Format input, inter, output;
+		Format input, inter, resReduce, output;
         if(inputFormat == Format.Type.LINE) { // LINE
 			input = new FormatLine(inputFName);
 		} else { // KV
 			input = new FormatKV(inputFName);
 		}
 		inter = new FormatKV(interFName);
+		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
 		
@@ -146,7 +149,6 @@ public class Job implements JobInterface {
     	
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
-		Format resReduce = new FormatKV(input.getFname() + "-res");
 		HdfsRead(inter.getFname(), resReduce.getFname());
     	System.out.println("OK\n");
 		
@@ -196,6 +198,7 @@ public class Job implements JobInterface {
     	this.inputFName = fname;
     	this.outputFName = fname + "-final";
 		this.interFName = fname + "-inter";
+		this.resReduceFName = fname + "-res";
     }
     
     public void setOutputFname(String fname){

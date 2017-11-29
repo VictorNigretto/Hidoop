@@ -131,12 +131,10 @@ public class ServiceHidoop {
             System.out.println("Vous avez choisi MapReduce");
             System.out.println("");
 
-            /*
             // On récupère le MapReduce
             System.out.println("Quel fichier contenant le Map/Reduce voulez-vous exécuter ?");
-            System.out.println("(le fichier doit être compilé et sans l'extension \".class\")");
+            System.out.println("(le fichier doit être sans extension)");
             String fileMr = sc.nextLine();
-            */
 
             // On récupère le fichier sur lequel le lancer
             System.out.println("Sur quel fichier voulez-vous appliquer MyMapReduce ?");
@@ -160,15 +158,23 @@ public class ServiceHidoop {
                 new DaemonRunner(cmdDaemon3).start();
                 // Lancer le MapReduce !
                 // Pour le moment on va le lancer à la main ! :D
-                //String [] cmdMr = {"toto.txt"};
+                //String [] cmdMr = {file};
                 //MyMapReduce.main(cmdMr);
+                //new MyMapReduceRunner(cmdMr).start();
+                
+                // Lancer un script qui lance le MyMapReduce !!!
+                // Recupérer le repertoire courant
+                String pwd = System.getProperty("user.dir");
+                System.out.println(executeCommand(pwd + "/src/mapreduceLanceur.sh " + fileMr + " " + file));
+            /*    
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("Vous pouvez lancer votre map manuellement !");
-            //System.out.println("Maping/Reducing terminée !");
+            */
+            //System.out.println("Vous pouvez lancer votre map manuellement !");
+            System.out.println("Maping/Reducing terminée !");
         }
     }
 

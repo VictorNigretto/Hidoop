@@ -9,7 +9,7 @@ public class Annuaire {
     public static void main(String[] args) {
         System.out.println("Lancement de l'annuaire ...");
         try {
-            Registry registry = LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(1199);
             System.out.println("OK");
         } catch (RemoteException e) {
             e.printStackTrace();

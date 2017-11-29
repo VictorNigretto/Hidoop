@@ -11,7 +11,7 @@ nbServeurs=3
 # La liste des noms des machines
 nomServ1="daurade"
 nomServ2="truite"
-nomserv3="omble"
+nomServ3="omble"
 
 # La liste des ports pour ces machines
 portServ1=4444
