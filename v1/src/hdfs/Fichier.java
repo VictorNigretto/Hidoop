@@ -29,6 +29,16 @@ public class Fichier {
 	public String getFragment(int num) {
 		return nom + "" + num;
 	}
+
+	public List<String> getFragments() {
+		List<String> l = new ArrayList<>();
+		
+		for(int i = 0; i < nbFragments; i++) {
+			l.add(this.getFragment(i));
+		}
+		
+		return l;
+	}
 	
 	/*****************************************
 	GETS && SETS
