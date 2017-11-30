@@ -8,6 +8,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 
+/* La classe utilisé pour faire communiquer les application
+ * HdfsServer et HdfsClient via un protocol TCP !
+ */
 public class Message {
 
 	private Socket sock;			// Socket faisant le lien entre client et serveur
@@ -21,7 +24,7 @@ public class Message {
 			 oos = new ObjectOutputStream(sock.getOutputStream());
 			 ois = new ObjectInputStream(sock.getInputStream());
 		} catch (UnknownHostException e) {
-			System.out.println(" Host non reconnu dans le OpenClient ");
+			System.out.println("Host non reconnu dans le OpenClient ");
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -62,12 +65,12 @@ public class Message {
 		try {
 			objet = (Object) ois.readObject();
 		} catch (UnknownHostException e) {
-			System.out.println(" Un des hosts n'est pas reconnu lors de la reception  ");
+			System.out.println("Un des hosts n'est pas reconnu lors de la reception  ");
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			System.out.println(" Objet non reconnu pendant la reception");
+			System.out.println("Objet non reconnu pendant la reception");
 			e.printStackTrace();
 		}
 		return objet;

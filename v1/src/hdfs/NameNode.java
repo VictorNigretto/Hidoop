@@ -16,7 +16,5 @@ public interface NameNode {
 	public ArrayList<String> getMachines(String nomFichier);
 	
 	/** renvoie un nouveau nom de machine correspondant à une machine qui marche et qui a le fragment "nomFragment" **/
-	public String changeMachine(String nomMachine, String nomFragment);
-	
-	
+	public String changeMachine(String nomMachine, String nomFragment);	
 }

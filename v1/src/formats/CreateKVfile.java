@@ -6,6 +6,9 @@ import java.io.*;
 import java.rmi.RemoteException;
 
 
+/* Fichier obsolète, permettant de créer un fichier de KV
+ * Cet ancien format était un fichier contenant des objets javas
+ */
 public class CreateKVfile {
 
     public static void main (String[] args){
