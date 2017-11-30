@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import javax.swing.text.AbstractDocument.BranchElement;
 
@@ -16,15 +17,16 @@ public class NameNodeImpl  implements NameNode {
 	/*****************************************
 	ATTRIBUTS
 	*****************************************/	
-	private final static int facteurDeReplication = 3;
-	private List<Machine> machines;
 	
-	private List<String> fichiers;
-	private Map<String, List<String>> fragmentsParFichier;
+	private final static int facteurDeReplication = 3;
+	
+	private List<Machine> machines;
+	private Map<String, Fichier> fichiers; // code un fichier, la clé est son nom, la valeur est un objet Fichier
 	
 	/*****************************************
 	CONSTRUCTEUR
 	*****************************************/
+	
 	//Initialisation de la liste des serveurs
 	public NameNodeImpl(String fichierSetup){
 		BufferedReader br = null;
@@ -56,7 +58,6 @@ public class NameNodeImpl  implements NameNode {
 			System.out.println("Usage : java NameNodeImple <file>");
 		} else {
 			NameNode monNameNode = new NameNodeImpl(args[0]);
-			
 		}
 	}
 
@@ -64,19 +65,38 @@ public class NameNodeImpl  implements NameNode {
 	METHODES
 	*****************************************/
 	
-	@Override
 	public List<String> getFragments(String nomFichier) {
-		// TODO Auto-generated method stub
-		return null;
+		return fichiers.get(nomFichier).getFragments();
 	}
 
-	@Override
-	public String getMachineFragment(String nomFragment, List<String> replicationsUilisees) {
-		// TODO Auto-generated method stub
-		return null;
+	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) {
+		List<Machine> mFrag = new ArrayList<>();
+		
+		// Récupérer la liste des machines contenant ce fragment
+		// Seulement si elles ne sont pas dans la liste des machinesInutilisables
+		for(Machine m : machines) {
+			if(m.containsFragment(nomFragment) && !machineInutilisables.contains(m)) {
+				mFrag.add(m);
+			}
+		}		
+		
+		// Trouver la machine la moins pleine (en nombre de fragments)
+		if(mFrag.isEmpty()) {
+			return null;
+		}
+		int min = mFrag.get(0).getFragments().size();
+		Machine mRes = mFrag.get(0);
+		for(Machine m : mFrag) {
+			if(m.getFragments().size() <= min) {
+				min = m.getFragments().size();
+				mRes = m;
+			}
+		}
+		
+		// Renvoyer le résultat
+		return mRes;
 	}
 
-	@Override
 	public List<String> getAllMachinesFragment(String nomFragment) {
 		// TODO Auto-generated method stub
 		return null;

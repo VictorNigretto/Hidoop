@@ -16,7 +16,7 @@ public class Machine {
 	private List<String> fragments;
 	
 	/*****************************************
-	ATTRIBUTS
+	CONSTRUCTEUR
 	*****************************************/
 
 	public Machine(String nom, int port) {
@@ -27,7 +27,21 @@ public class Machine {
 	}
 	
 	/*****************************************
-	ATTRIBUTS
+	METHODES
+	*****************************************/
+	
+	/* Renvoie vrai si cette machine contient ce fragment */
+	public boolean containsFragment(String nomFragment) {
+		for(String s : fragments) {
+			if(s.equals(nomFragment)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/*****************************************
+	GETS && SETS
 	*****************************************/
 
 	public String getNom() {
