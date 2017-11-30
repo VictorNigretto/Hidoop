@@ -1,6 +1,7 @@
 package hdfs;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public interface NameNode {
@@ -16,13 +17,17 @@ public interface NameNode {
 	public List<String> getFragments(String nomFichier);
 	
 	/** Renvoie la machine la plus âpte à être utilié pour accèder à ce fragment.
-	 * La collection replicationUtilisees sert si jamais la machine ne fonctionne pas :
-	 * On peut rapeller cette méthode en mettant les machines ne fonctionnant pas dans replicationsUtilisees :
+	 * La collection machineInutilisables sert si jamais la machine ne fonctionne pas :
+	 * On peut rapeller cette méthode en mettant les machines ne fonctionnant pas dans machineInutilisables :
 	 * ça nous assure que la prochaine machine n'appartiendra pas à cette liste.
 	 * 
 	 * Si il ne reste plus de machines utilisables, on renvoie une collection vide.
 	 */
-	public String getMachineFragment(String nomFragment, List<String> replicationsUtilisees);
+	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables);
+	
+	/** Renvoie la liste des machines pour accèder à ce fragment.
+	*/
+	public List<String> getAllMachinesFragment(String nomFragment);
 }
 
 

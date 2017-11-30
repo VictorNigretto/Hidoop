@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import javax.swing.text.AbstractDocument.BranchElement;
 
@@ -68,12 +69,37 @@ public class NameNodeImpl implements NameNode {
 		return fichiers.get(nomFichier).getFragments();
 	}
 
-	public String getMachineFragment(String nomFragment, List<String> replicationsUtilisees) {
+	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) {
+		List<Machine> mFrag = new ArrayList<>();
+		
 		// Récupérer la liste des machines contenant ce fragment
+		// Seulement si elles ne sont pas dans la liste des machinesInutilisables
+		for(Machine m : machines) {
+			if(m.containsFragment(nomFragment) && !machineInutilisables.contains(m)) {
+				mFrag.add(m);
+			}
+		}		
 		
-		// Faire la différence ensembliste avec les replicationsUtilisees
+		// Trouver la machine la moins pleine (en nombre de fragments)
+		if(mFrag.isEmpty()) {
+			return null;
+		}
+		int min = mFrag.get(0).getFragments().size();
+		Machine mRes = mFrag.get(0);
+		for(Machine m : mFrag) {
+			if(m.getFragments().size() <= min) {
+				min = m.getFragments().size();
+				mRes = m;
+			}
+		}
 		
-		// Trouver la machine la moins pleine
+		// Renvoyer le résultat
+		return mRes;
+	}
+
+	public List<String> getAllMachinesFragment(String nomFragment) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/*****************************************
