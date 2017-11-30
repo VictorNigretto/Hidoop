@@ -19,9 +19,8 @@ public class NameNodeImpl implements NameNode {
 	
 	private int facteurDeReplication;
 	private List<Machine> machines;
-	
-	private List<String> fichiers;
-	private Map<String, List<String>> fragmentsParFichier;
+		
+	private List<Fichier> fichiers;
 		
 	/*****************************************
 	CONSTRUCTEUR
