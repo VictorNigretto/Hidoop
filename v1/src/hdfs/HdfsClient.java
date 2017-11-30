@@ -11,8 +11,8 @@ import formats.Format;
 import formats.Format.Commande;
 import util.Message;
 
-/* L'application lancé sur la machine du client.
- * Ell va lui permettre de lire, écrire et détruire des fichiers
+/* L'application lancée sur la machine du client.
+ * Elle va lui permettre de lire, écrire et détruire des fichiers
  * sur le serveur HDFS.
  */
 public class HdfsClient {
