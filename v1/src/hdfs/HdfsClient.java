@@ -149,27 +149,26 @@ public class HdfsClient {
 		System.out.println("Demande de lecture d'un fichier ...");
 		Message m = new Message(); // Pour envoyer des messages
 		File file = new File(localFSDestFname); // le fichier local dans lequel écrire
+		NameNode nn = null;
 		
 		try {
+			nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
 			FileWriter fw = new FileWriter(file, true);
-			
-			// On récupère pour chaque serveurs les fragments de fichier et on écrit à la suite,
-			// les lignes (ou les kv) dans un fichier local
-			for (int i = 0; i < servers.length; i++) {
-				
-				//On envoie la commande au serveur et celui-ci renvoie le type et 
-				//la chaine de caractères correspondant à son fragment.
-				m.openClient(ordis[i], servers[i]);
+			//On récupère la liste des fragments fichier
+			ArrayList<String> fragments = (ArrayList<String>) nn.getFragments(hdfsFname);
+			//TODO : gerer le fait qu'une machine peut etre K.O
+			for(String frag : fragments){
+				//une machine qui contient frag
+				Machine mac = nn.getMachineFragment(frag, null);
+				m.openClient(mac.getNom(), mac.getPort());
 				m.send(Commande.CMD_READ);
-				m.send(hdfsFname + String.valueOf(i));
+				m.send(frag);
 				String strReceived = (String) m.receive();
 				m.close();
-				System.out.println("envoyée au serveur " + i);
-								
-				//on rajoute donc les lignes reçu dans le fichier local à la fin
+				System.out.println("envoyée au serveur " + mac.getNom() + ":" + mac.getPort());
 				fw.write(strReceived, 0, strReceived.length());		
 			}
-			
+
 			// On ferme notre fichier 
 			fw.close();
 			System.out.print("Ecriture des données dans un fichier local ...");

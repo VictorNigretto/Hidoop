@@ -1,10 +1,11 @@
 package hdfs;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /* Classe permettant de gérer une machine distante */
-public class Machine {
+public class Machine implements Serializable{
 	
 	/*****************************************
 	ATTRIBUTS
@@ -16,7 +17,7 @@ public class Machine {
 	private List<String> fragments;
 	
 	/*****************************************
-	CONSTRUCTEUR
+	ATTRIBUTS
 	*****************************************/
 
 	public Machine(String nom, int port) {
@@ -27,21 +28,7 @@ public class Machine {
 	}
 	
 	/*****************************************
-	METHODES
-	*****************************************/
-	
-	/* Renvoie vrai si cette machine contient ce fragment */
-	public boolean containsFragment(String nomFragment) {
-		for(String s : fragments) {
-			if(s.equals(nomFragment)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	/*****************************************
-	GETS && SETS
+	ATTRIBUTS
 	*****************************************/
 
 	public String getNom() {
