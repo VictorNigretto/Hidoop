@@ -40,6 +40,29 @@ public class NameNodeImpl implements NameNode {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	//Initialisation de la liste des serveurs
+	public static void load(String fichierSetup){
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader(fichierSetup));
+		} catch (FileNotFoundException e) {
+			System.out.println("Fichier " + fichierSetup + " introuvable");
+		}
+		String ligne;
+		servers = new ArrayList<>();
+		ports = new ArrayList<>();
+		try {
+			while ((ligne = br.readLine()) != null){
+				String[] machine = ligne.split(" ");
+				ports.add(Integer.parseInt(machine[0]));
+				servers.add(machine[1]);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	System.out.println("Liste des machines et des ports initialisées");
+	}
 
 	public static void main(String[] args) {
 		
@@ -47,26 +70,26 @@ public class NameNodeImpl implements NameNode {
 		if(args.length != 1){
 			System.out.println("Usage : java NameNodeImple <file>");
 		} else {
-			BufferedReader br = null;
-			try {
-				br = new BufferedReader(new FileReader(args[0]));
-			} catch (FileNotFoundException e) {
-				System.out.println("Fichier " + args[0] + " introuvable");
-			}
-			String ligne;
-			servers = new ArrayList<>();
-			ports = new ArrayList<>();
-			int i = 0;
-			try {
-				while ((ligne = br.readLine()) != null){
-					String[] machine = ligne.split(" ");
-					ports.add(Integer.parseInt(machine[0]));
-					servers.add(machine[1]);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		System.out.println("Liste des machines et des ports initialisées");
+			load(args[0]);
+			
 		}
+	}
+
+	@Override
+	public Collection<String> getFragments(String nomFichier) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getMachineFragment(String nomFragment, Collection<String> replicationsUilisees) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<String> getFragments(String nomFichier) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
