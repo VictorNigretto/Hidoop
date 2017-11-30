@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 
 import javax.swing.text.AbstractDocument.BranchElement;
 
-public class NameNodeImpl implements NameNode {
+public class NameNodeImpl  implements NameNode {
 	
 	/*****************************************
 	ATTRIBUTS
@@ -107,6 +107,51 @@ public class NameNodeImpl implements NameNode {
 		}
 		
 		return mFrag;
+	}
+
+	public List<String> getAllFragmentFichierMachine(Machine m, String nomFichier) {
+		List<String> frag = new ArrayList<>();
+		
+		for(String f : m.getFragments()) {
+			// si le fragment commence par le nom du fichier
+			if(f.startsWith(nomFichier)) {
+				// alors on vérifie que c'est bien un fragment, et pas un autre fichier
+				String fin = f.replaceFirst(nomFichier, "");
+				
+				try {
+					Integer.parseInt(fin);
+					frag.add(f);
+				} catch (NumberFormatException e) {
+					// Si ça lève une exception, ce n'est pas un fragment de ce fichier
+				}
+			}
+		}
+		return frag;
+	}
+
+	public List<Machine> getMachinesFichier(String nomFichier) {
+		List<Machine> list = new ArrayList<>();
+		
+		// Pour chaque machine
+		for(Machine m : machines) {
+			// On vérifie si elle possède un fragment de ce fichier
+			for(String f : m.getFragments()) {
+				// si un fragment commence par le nom du fichier
+				if(f.startsWith(nomFichier)) {
+					String fin = f.replaceFirst(nomFichier, "");
+					
+					try {
+						Integer.parseInt(fin);
+						list.add(m);
+						break;
+					} catch (NumberFormatException e) {
+						// si ça lève une exception, ce n'est pas un fragment de ce fichier
+					}
+				}
+			}
+		}
+		
+		return list;
 	}
 
 	/*****************************************

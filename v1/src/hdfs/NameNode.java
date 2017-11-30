@@ -25,9 +25,14 @@ public interface NameNode {
 	 */
 	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables);
 	
-	/** Renvoie la liste des machines pour accèder à ce fragment.
-	*/
+	/** Renvoie la liste des machines pour accèder à ce fragment. */
 	public List<Machine> getAllMachinesFragment(String nomFragment);
+	
+	/** Renvoie la liste des fragments d'un fichier contenu dans une machine */
+	public List<String> getAllFragmentFichierMachine(Machine m, String nomFichier);
+	
+	/** Renvoie la liste des machines qui contiennent au moins un fragment du fichier donné en paramètre*/
+	public List<Machine> getMachinesFichier(String nomFichier);
 }
 
 

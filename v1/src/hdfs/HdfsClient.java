@@ -3,10 +3,15 @@
 package hdfs;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.ObjectInputStream;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 import formats.Format;
@@ -34,28 +39,28 @@ public class HdfsClient {
     public static void HdfsDelete(String hdfsFname) {
     	//Recuperer la liste des machines auxquelles on va envoyer la demande de suppression
     	//On interroge le NameNode
-    	NameNodeImpl nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
-    	ArrayList<String> fragmentsASupprimer = (ArrayList<String>) nn.getFragments(hdfsFname);
-    	//Récuperer la liste des machines sur lequelles se trouvent chaque fragment
-    	ArrayList<String> machinesSuppr = new ArrayList<String>()
-    	for(String f : fragmentsASupprimer){
-    		
-    	}
+    	NameNodeImpl nn = null;
+		try {
+			nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+		} catch (MalformedURLException | RemoteException | NotBoundException e) {
+			e.printStackTrace();
+		}
+    	ArrayList<Machine> machinesSupprimer = (ArrayList<Machine>) nn.getMachinesFichier(hdfsFname);
     	
-    	
-		int nbServer = servers.length;
 		Message m = new Message(); // Pour envoyer des messages
-
 		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
 
-		// Pour chaque serveur
-		for (int i = 0; i < nbServer; i++) {
-			//On supprime lui demande de supprimer son fragment
-			m.openClient(ordis[i],servers[i]);
-			m.send(Commande.CMD_DELETE);
-			m.send(hdfsFname  + String.valueOf(i));
+		// Pour chaque serveur, on va supprimer les fragments qu'il contient
+		for (Machine mac  : machinesSupprimer) {
+			ArrayList<String> fragments = (ArrayList<String>) nn.getAllFragmentFichierMachine(mac, hdfsFname);
+			m.openClient(mac.getNom(), mac.getPort());
+			for (String frag : fragments){
+				m.send(Commande.CMD_DELETE);
+				m.send(frag);
+			}
 			m.close();
-			System.out.println("envoyee au serveur " + i );
+			//Si bug, remettre les close t openclient dans la boucle for
+			System.out.println("envoyee au serveur " + mac.getNom() + ":" + mac.getPort());
 		}
 	}
 	
