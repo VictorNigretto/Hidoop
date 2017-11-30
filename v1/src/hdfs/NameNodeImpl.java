@@ -97,9 +97,16 @@ public class NameNodeImpl implements NameNode {
 		return mRes;
 	}
 
-	public List<String> getAllMachinesFragment(String nomFragment) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Machine> getAllMachinesFragment(String nomFragment) {
+		List<Machine> mFrag = new ArrayList<>();
+		
+		for(Machine m : machines) {
+			if(m.containsFragment(nomFragment)) {
+				mFrag.add(m);
+			}
+		}
+		
+		return mFrag;
 	}
 
 	/*****************************************

@@ -27,7 +27,7 @@ public interface NameNode {
 	
 	/** Renvoie la liste des machines pour accèder à ce fragment.
 	*/
-	public List<String> getAllMachinesFragment(String nomFragment);
+	public List<Machine> getAllMachinesFragment(String nomFragment);
 }
 
 
