@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.rmi.Naming;
+import java.util.ArrayList;
 
 import formats.Format;
 import formats.Format.Commande;
@@ -16,14 +18,6 @@ import util.Message;
  * sur le serveur HDFS.
  */
 public class HdfsClient {
-	
-	/*****************************************
-	ATTRIBUTS
-	*****************************************/
-
-	// TODO : à remplacer par le setup !
-	private static int servers[] = {6662,5552,4442};
-	private static String ordis[] = {"omble", "truite", "daurade" };
 
 	/*****************************************
 	METHODES
@@ -38,6 +32,17 @@ public class HdfsClient {
 	
     /* Pour supprimer un fichier du serveur HDFS */
     public static void HdfsDelete(String hdfsFname) {
+    	//Recuperer la liste des machines auxquelles on va envoyer la demande de suppression
+    	//On interroge le NameNode
+    	NameNodeImpl nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+    	ArrayList<String> fragmentsASupprimer = (ArrayList<String>) nn.getFragments(hdfsFname);
+    	//Récuperer la liste des machines sur lequelles se trouvent chaque fragment
+    	ArrayList<String> machinesSuppr = new ArrayList<String>()
+    	for(String f : fragmentsASupprimer){
+    		
+    	}
+    	
+    	
 		int nbServer = servers.length;
 		Message m = new Message(); // Pour envoyer des messages
 

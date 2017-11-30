@@ -65,13 +65,19 @@ public class NameNodeImpl implements NameNode {
 	*****************************************/
 	
 	@Override
-	public Collection<String> getFragments(String nomFichier) {
+	public List<String> getFragments(String nomFichier) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public String getMachineFragment(String nomFragment, Collection<String> replicationsUilisees) {
+	public String getMachineFragment(String nomFragment, List<String> replicationsUilisees) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<String> getAllMachinesFragment(String nomFragment) {
 		// TODO Auto-generated method stub
 		return null;
 	}
