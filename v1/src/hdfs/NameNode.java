@@ -26,6 +26,12 @@ public interface NameNode {
 	public String getMachineFragment(String nomFragment, List<String> replicationsUilisees);
 	
 	public List<String> getAllMachinesFragment(String nomFragment);
+	
+	/** Renvoie la liste des fragments d'un fichier contenu dans une machine */
+	public List<String> getAllFragmentFichierMachine(Machine m, String nomFichier);
+	
+	/** Renvoie la liste des machines qui contiennent au moins un fragment du fichier donné en paramètre*/
+	public List<Machine> getMachinesFichier(String NomFichier);
 
 }
 

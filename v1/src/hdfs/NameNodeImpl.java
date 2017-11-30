@@ -11,7 +11,7 @@ import java.util.Map;
 
 import javax.swing.text.AbstractDocument.BranchElement;
 
-public class NameNodeImpl implements NameNode {
+public class NameNodeImpl  implements NameNode {
 	
 	/*****************************************
 	ATTRIBUTS
