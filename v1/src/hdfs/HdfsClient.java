@@ -13,6 +13,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import formats.Format;
 import formats.Format.Commande;
@@ -70,9 +71,21 @@ public class HdfsClient {
      * Le nombre de fois que l'on veut que ce fichier soit dupliqué sur le serveur.
      */
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
+    	//TODO : envoyer le nombre de serveurs au client et le facteur de réplication
+		int factReplication = 3;
 		Message m = new Message(); // Pour pouvoir envoyer des messages
 		File fichier = new File(localFSSourceFname); // le fichier que l'on lit
-		int nbServer = servers.length;
+
+        //Recupération des machines disponibles en écriture
+        NameNodeImpl nn = null;
+        try {
+            nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+        } catch (MalformedURLException | RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<Machine> machines = (ArrayList<Machine>) nn.getMachines();
+        int nbServeurs = machines.size();
 
     	try {
 			//On a donc un format line ou un format KV, dans les deux cas le fichier est écrits sous forme de fichier text 
@@ -82,21 +95,58 @@ public class HdfsClient {
 				System.out.println("Demande d'écriture d'un fichier ...");
 				FileReader fr = new FileReader(fichier);
 				BufferedReader br = new BufferedReader(fr);
-				
-				//mise en place d'une marque au début du fichier (8192 est la taille max du BufferedReader)
-				br.mark(8192);
-				
-				//Lire le fichier une première fois pour pouvoir compter le nombre de lignes 
-				int nbLine = 0;
-				while (br.readLine() != null) {
-					nbLine++;
-				}
 
-				//Retour à la marque (placée au début du fichier
-				br.reset();
+                /*Debut du nouveau code*/
+				//Lire la taille du fichier
+                long tailleF = fichier.length();
+                int numFragment = 1;
 
+                //Selectionner la premiere machine qui recoit un fragment au hasard.
+                int randomNum = ThreadLocalRandom.current().nextInt(0, machines.size()+1);
+                Machine firstMachine = machines.get(randomNum);
+
+				//On envoie des fragments de fichiers aux serveurs
+                while(br.readLine()!=null) {
+
+                    long tailleFrag = 0L;
+                    String str = new String();
+
+                    //On calcule le String à envoyer pour un fragment
+                    while ((tailleF / nbServeurs) > tailleFrag) {
+                        str += br.readLine() + "\n";
+                        tailleFrag = str.getBytes().length;
+                    }
+
+                    //On l'envoie
+                    for (int i = 0; i < factReplication; i++) {
+                        m.openClient(firstMachine.getNom(),firstMachine.getPort());
+                        m.send(Commande.CMD_WRITE);
+                        System.out.println("envoyée au serveur " + firstMachine.getNom());
+
+                        //Choisir la machine suivante
+                        int indice = machines.indexOf(firstMachine);
+                        if(indice+1 == machines.size()){
+                            firstMachine = machines.get(0);
+                        } else {
+                            firstMachine = machines.get(indice + 1);
+                        }
+
+                        // On envoie le nom du fichier concaténé avec son numéro de fragment
+                        m.send(fichier.getName() + String.valueOf(numFragment));
+                        // On envoie le format du fichier
+                        m.send(fmt);
+
+                        // On envoie le contenu du fichier puis on ferme les sockets
+                        m.send(str);
+                        m.close();
+                    }
+                    numFragment++;
+                }
+
+                /*Fin du nouveau code*/
+/**
 				//Aides pour calculer le nombre de lignes envoyées à chaque serveurs
-				int quotient = nbLine/nbServer;
+				int quotient = nbLine/nbServeurs;
 				int reste = nbLine%nbServer;
 				
 				//Envoie de ces lignes à chaque serveurs
@@ -128,6 +178,7 @@ public class HdfsClient {
 					
 					System.out.println("fragment envoyé au serveur " + i);
 				}
+ */
 				
 				// On ferme le fichier
 				br.close();

@@ -33,6 +33,9 @@ public interface NameNode {
 	
 	/** Renvoie la liste des machines qui contiennent au moins un fragment du fichier donné en paramètre*/
 	public List<Machine> getMachinesFichier(String nomFichier);
+
+	/** Renvoie la liste des toutes les machines*/
+	public List<Machine> getMachines();
 }
 
 

@@ -157,4 +157,7 @@ public class NameNodeImpl  implements NameNode {
 	/*****************************************
 	GETS && SETS
 	*****************************************/
+	public List<Machine> getMachines() {
+		return machines;
+	}
 }
