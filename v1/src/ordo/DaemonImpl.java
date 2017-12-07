@@ -90,10 +90,6 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.nomMachine = nomMachine;
 	}
 
-	@Override
-	public Machine getMachine() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+
 
 }

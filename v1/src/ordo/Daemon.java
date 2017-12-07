@@ -14,6 +14,4 @@ public interface Daemon extends Remote {
 	// On fournit le mapper, le reader, le writer, et le callback
 	// Le callback sert à dire au job qu'on a terminé de faire le map
 	public void runMap (Mapper m, Format reader, Format writer, CallBack cb) throws RemoteException;
-	
-	public Machine getMachine();
 }

@@ -5,6 +5,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.List;
 
 import formats.Format;
 import hdfs.Machine;
@@ -75,9 +76,18 @@ public class MapRunner extends Thread {
 		} catch (RemoteException e) {
 			try {
 				NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" + " NameNode" );
-				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);
+				List<Machine> machines = nn.getMachines();		
+				int i = 0;
+				while (machines.get(i).getNomDaemon().equals(((DaemonImpl)deamon).getName()) && i<machines.size() ) {
+					i++;
+				}	
+				if (!listeMachinesPanne.contains(machines.get(i))) {
+					listeMachinesPanne.add(machines.get(i));
+				}
+				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);	
+				this.deamon = new DaemonImpl(machine.getNomDaemon());
+				this.deamon.runMap(this.m, this.reader, this.writer, this.cb);
 				
-				this.deamon = machine.getDaemons();
 			} catch (MalformedURLException | RemoteException | NotBoundException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();

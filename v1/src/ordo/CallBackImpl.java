@@ -28,22 +28,25 @@ public class CallBackImpl extends UnicastRemoteObject implements  CallBack {
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}
 		}
 	};
 	
 	
-	Runnable attendre = new Runnable() {
+	Runnable attendre = new Runnable() {	
 		public void run() {
-			try {
+			int nbMapsFin = 0;
+			try {		
 				for(int i = 0; i < nbDaemons; i++) {
 					nbMapsFinished.acquire();
+					nbMapsFin = i;
 				}
 				sleeping.interrupt();
 
 			}catch (InterruptedException e) {
 				e.printStackTrace();
 			}finally{
-				System.out.println((i+1) + " maps se sont finis.");
+				System.out.println((nbMapsFin+1) + " maps se sont finis.");
 			}
 		}	
 	};
@@ -70,7 +73,7 @@ public class CallBackImpl extends UnicastRemoteObject implements  CallBack {
 	
 
 
-	}
+}
 
 
 

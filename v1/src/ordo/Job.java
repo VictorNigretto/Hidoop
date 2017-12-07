@@ -17,6 +17,7 @@ import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -43,6 +44,8 @@ public class Job implements JobInterface {
 	private String interFName;
 	private List<Machine> machines; //la liste des machines sur lesquelles tournent les démons
 	private List<String> nomsDaemons;
+	private NameNode nn;
+	private HashMap<String,Machine> demonsToMachines = new HashMap<String,Machine>();
 
 	/*****************************************
 	Constructeurs
@@ -123,7 +126,7 @@ public class Job implements JobInterface {
     			e.printStackTrace();
     		}
 
-		
+    		nn.ajoutFichierHdfs(inter.getFname());
     		// Puis on va lancer les maps sur les différents démons
     		System.out.println("Lancement des Maps ...");
     		for(int i = 0; i < demons.size(); i++) {
@@ -137,7 +140,7 @@ public class Job implements JobInterface {
 		        	inputTmp = new FormatKV(input.getFname() + "" + i);
 				}
 		        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-	
+		        nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname());
 				// on appelle le map sur le démon
 				MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 				mapRunner.start();
@@ -253,11 +256,12 @@ public class Job implements JobInterface {
     }
 
     public void initMachinesDaemons(){
-		NameNode nn;
 		try {
 			nn = ((NameNode) Naming.lookup("/localhost:1090/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
 			machines = nn.getMachines();
-			nomsDaemons = nn.getDaemons();
+			for (Machine m : machines) {
+				demonsToMachines.put(m.getNomDaemon(), m);
+			}
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
