@@ -43,6 +43,9 @@ public interface NameNode {
 	public List<Machine> getMachines();
 	/** Renvoie la liste des démons (dans le même ordre que les machines */
 	public List<String> getDaemons();
+	
+	/** Renvoie le nom du démon correspondant à la machine */
+	public String getDaemonMachine(Machine m);
 }
 
 

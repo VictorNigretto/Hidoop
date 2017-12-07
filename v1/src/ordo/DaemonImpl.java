@@ -2,12 +2,14 @@ package ordo;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import formats.Format;
+import hdfs.Machine;
 import map.Mapper;
 
 public class DaemonImpl extends UnicastRemoteObject implements Daemon {
@@ -15,11 +17,20 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	private static final long serialVersionUID = 1L;
 	
 	private String name; // Les démons ont un nom pour qu'on puisse les différencier
+	private String nomMachine;
+	
 	
 	protected DaemonImpl(String name) throws RemoteException {
 		super();
 		this.name = name;
 		System.out.println("Création du Deamon " + this.name);
+        try {
+			nomMachine = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	@Override
@@ -51,7 +62,6 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		try {
 			Daemon d = new DaemonImpl(args[0]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
-            String nomMachine = InetAddress.getLocalHost().getHostName();
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
             //Registry registry = LocateRegistry.createRegistry(1099);
             //registry.rebind("//localhost:1099",  d);
@@ -70,6 +80,20 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getNomMachine() {
+		return nomMachine;
+	}
+
+	public void setNomMachine(String nomMachine) {
+		this.nomMachine = nomMachine;
+	}
+
+	@Override
+	public Machine getMachine() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
