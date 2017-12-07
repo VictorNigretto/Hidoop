@@ -4,15 +4,22 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
 import javax.swing.text.AbstractDocument.BranchElement;
 
-public class NameNodeImpl  implements NameNode {
+import ordo.DaemonImpl;
+
+public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 	
 	/*****************************************
 	ATTRIBUTS
@@ -28,7 +35,8 @@ public class NameNodeImpl  implements NameNode {
 	*****************************************/
 	
 	//Initialisation de la liste des serveurs
-	public NameNodeImpl(String fichierSetup){
+	public NameNodeImpl(String fichierSetup) throws RemoteException{
+		// On récupère la liste des Machines
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(fichierSetup));
@@ -45,19 +53,32 @@ public class NameNodeImpl  implements NameNode {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	System.out.println("Liste des machines et des ports initialisées");
+		System.out.println("Liste des machines et des ports initialisées");
+		
+		// On initialise la liste des machines
+		fichiers = new HashMap<String, Fichier>();
 	}
 	
 	/*****************************************
 	MAIN
 	*****************************************/
 	
-	public static void main(String[] args) {
-		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
+	public static void main(String[] args) throws RemoteException {
+		// On vérifie que l'utilisateur lance le main correctement
 		if(args.length != 1){
 			System.out.println("Usage : java NameNodeImple <file>");
-		} else {
-			NameNode monNameNode = new NameNodeImpl(args[0]);
+			return;
+		}
+		
+		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
+		NameNode monNameNode = new NameNodeImpl(args[0]);
+		
+		// Se connecter à l'annuaire
+		try {
+			Naming.rebind("//localhost:1199/NameNode",  monNameNode);
+		} catch (RemoteException | MalformedURLException e) {
+			System.out.println("Echec de la connexion du NameNode à l'annuaire !");
+			e.printStackTrace();
 		}
 	}
 
@@ -65,11 +86,11 @@ public class NameNodeImpl  implements NameNode {
 	METHODES
 	*****************************************/
 	
-	public List<String> getFragments(String nomFichier) {
+	public List<String> getFragments(String nomFichier) throws RemoteException {
 		return fichiers.get(nomFichier).getFragments();
 	}
 
-	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) {
+	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) throws RemoteException {
 		List<Machine> mFrag = new ArrayList<>();
 		
 		// Récupérer la liste des machines contenant ce fragment
@@ -97,7 +118,7 @@ public class NameNodeImpl  implements NameNode {
 		return mRes;
 	}
 
-	public List<Machine> getAllMachinesFragment(String nomFragment) {
+	public List<Machine> getAllMachinesFragment(String nomFragment) throws RemoteException{
 		List<Machine> mFrag = new ArrayList<>();
 		
 		for(Machine m : machines) {
@@ -109,7 +130,7 @@ public class NameNodeImpl  implements NameNode {
 		return mFrag;
 	}
 
-	public List<String> getAllFragmentFichierMachine(Machine m, String nomFichier) {
+	public List<String> getAllFragmentFichierMachine(Machine m, String nomFichier) throws RemoteException{
 		List<String> frag = new ArrayList<>();
 		
 		for(String f : m.getFragments()) {
@@ -129,7 +150,7 @@ public class NameNodeImpl  implements NameNode {
 		return frag;
 	}
 
-	public List<Machine> getMachinesFichier(String nomFichier) {
+	public List<Machine> getMachinesFichier(String nomFichier) throws RemoteException{
 		List<Machine> list = new ArrayList<>();
 		
 		// Pour chaque machine
@@ -153,11 +174,36 @@ public class NameNodeImpl  implements NameNode {
 		
 		return list;
 	}
+	
+	public void ajoutFichierHdfs(String nomFichier) {
+		fichiers.put(nomFichier, new Fichier(nomFichier));
+	}
+	
+	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment) {
+		for(Machine m : machines) {
+			if(machine.getNom().equals(m.getNom())) {
+				m.getFragments().add(nomFragment);
+			}
+		}
+		Fichier f = fichiers.get(nomFichier);
+		f.setNbFragments(f.getNbFragments() + 1);
+	}
+	
+	public void supprimeFichierHdfs(String nomFichier) {
+		for(Machine m : machines) {
+			// TODO !
+		}
+		fichiers.remove(nomFichier);
+	}
 
 	/*****************************************
 	GETS && SETS
 	*****************************************/
 	public List<Machine> getMachines() {
 		return machines;
+	}
+
+	public static int getFacteurdereplication() {
+		return facteurDeReplication;
 	}
 }

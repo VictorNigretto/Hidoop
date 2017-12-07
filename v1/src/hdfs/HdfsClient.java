@@ -3,11 +3,9 @@
 package hdfs;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.ObjectInputStream;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -41,19 +39,28 @@ public class HdfsClient {
     	//Recuperer la liste des machines auxquelles on va envoyer la demande de suppression
     	//On interroge le NameNode
     	NameNodeImpl nn = null;
+    	ArrayList<Machine> machinesSupprimer = null;
+
 		try {
-			nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+			nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
+			machinesSupprimer = (ArrayList<Machine>) nn.getMachinesFichier(hdfsFname);
+
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			e.printStackTrace();
 		}
-    	ArrayList<Machine> machinesSupprimer = (ArrayList<Machine>) nn.getMachinesFichier(hdfsFname);
     	
 		Message m = new Message(); // Pour envoyer des messages
 		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
 
 		// Pour chaque serveur, on va supprimer les fragments qu'il contient
 		for (Machine mac  : machinesSupprimer) {
-			ArrayList<String> fragments = (ArrayList<String>) nn.getAllFragmentFichierMachine(mac, hdfsFname);
+			ArrayList<String> fragments = null;
+			
+			try {
+				fragments = (ArrayList<String>) nn.getAllFragmentFichierMachine(mac, hdfsFname);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
 			m.openClient(mac.getNom(), mac.getPort());
 			for (String frag : fragments){
 				m.send(Commande.CMD_DELETE);
@@ -71,21 +78,22 @@ public class HdfsClient {
      * Le nombre de fois que l'on veut que ce fichier soit dupliqué sur le serveur.
      */
     public static void HdfsWrite(Format.Type fmt, String localFSSourceFname, int repFactor) {
-    	//TODO : envoyer le nombre de serveurs au client et le facteur de réplication
-		int factReplication = 3;
+    	
+    	//TODO : envoyer le nombre de serveurs au client
 		Message m = new Message(); // Pour pouvoir envoyer des messages
 		File fichier = new File(localFSSourceFname); // le fichier que l'on lit
 
         //Recupération des machines disponibles en écriture
         NameNodeImpl nn = null;
         try {
-            nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+            nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
         } catch (MalformedURLException | RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
 
         ArrayList<Machine> machines = (ArrayList<Machine>) nn.getMachines();
         int nbServeurs = machines.size();
+        int factReplication = nn.getFacteurdereplication();
 
     	try {
 			//On a donc un format line ou un format KV, dans les deux cas le fichier est écrits sous forme de fichier text 
@@ -110,11 +118,13 @@ public class HdfsClient {
 
                     long tailleFrag = 0L;
                     String str = new String();
+                	String ligne;
 
                     //On calcule le String à envoyer pour un fragment
                     while ((tailleF / nbServeurs) > tailleFrag) {
-                        str += br.readLine() + "\n";
-                        tailleFrag = str.getBytes().length;
+                    	ligne = br.readLine() + "\n";
+                        str += ligne;
+                        tailleFrag += ligne.getBytes().length;
                     }
 
                     //On l'envoie
@@ -122,14 +132,6 @@ public class HdfsClient {
                         m.openClient(firstMachine.getNom(),firstMachine.getPort());
                         m.send(Commande.CMD_WRITE);
                         System.out.println("envoyée au serveur " + firstMachine.getNom());
-
-                        //Choisir la machine suivante
-                        int indice = machines.indexOf(firstMachine);
-                        if(indice+1 == machines.size()){
-                            firstMachine = machines.get(0);
-                        } else {
-                            firstMachine = machines.get(indice + 1);
-                        }
 
                         // On envoie le nom du fichier concaténé avec son numéro de fragment
                         m.send(fichier.getName() + String.valueOf(numFragment));
@@ -139,6 +141,16 @@ public class HdfsClient {
                         // On envoie le contenu du fichier puis on ferme les sockets
                         m.send(str);
                         m.close();
+                        
+                        //Choisir la machine suivante
+                        int indice = machines.indexOf(firstMachine);
+                        if(indice+1 == machines.size()){
+                            firstMachine = machines.get(0);
+                        } else {
+                            firstMachine = machines.get(indice + 1);
+                        }
+                        
+                        //Dire au NameNode qu'on a mis le fragment dans firstMachine
                     }
                     numFragment++;
                 }
@@ -203,11 +215,13 @@ public class HdfsClient {
 		NameNode nn = null;
 		
 		try {
-			nn = (NameNodeImpl) Naming.lookup("//localhost/NameNode");
+			nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
 			FileWriter fw = new FileWriter(file, true);
-			//On récupère la liste des fragments fichier
+			//On récupère la liste des fragments fichier, dans l'ordre
 			ArrayList<String> fragments = (ArrayList<String>) nn.getFragments(hdfsFname);
+			
 			//TODO : gerer le fait qu'une machine peut etre K.O
+			
 			for(String frag : fragments){
 				//une machine qui contient frag
 				Machine mac = nn.getMachineFragment(frag, null);
