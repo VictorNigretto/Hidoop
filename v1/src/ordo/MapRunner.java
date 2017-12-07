@@ -75,7 +75,7 @@ public class MapRunner extends Thread {
 			
 		} catch (RemoteException e) {
 			try {
-				NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" + " NameNode" );
+				/*NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" + " NameNode" );
 				List<Machine> machines = nn.getMachines();		
 				int i = 0;
 				while (machines.get(i).getNomDaemon().equals(((DaemonImpl)deamon).getName()) && i<machines.size() ) {
@@ -84,12 +84,24 @@ public class MapRunner extends Thread {
 				if (!listeMachinesPanne.contains(machines.get(i))) {
 					listeMachinesPanne.add(machines.get(i));
 				}
-				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);	
-				this.deamon = new DaemonImpl(machine.getNomDaemon());
-				this.deamon.runMap(this.m, this.reader, this.writer, this.cb);
+				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);	*/
+				/*this.deamon = new DaemonImpl(machine.getNomDaemon());
 				
+				this.deamon.runMap(this.m, this.reader, this.writer, this.cb);
+				*/
+				
+				// On demande au NameNode une autre machine pour savoir qui est le nouveau démon
+				NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" +"NameNode");
+				listeMachinesPanne.add(((DaemonImpl) deamon).getMachine());
+				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);
+				String newNomDaemon = machine.getNomDaemon();
+				
+				//On se connecte à ce nouveau démon
+				this.deamon = (Daemon) Naming.lookup("/" + machine.getNom()+ "/" + newNomDaemon);
+				
+				// On recommence ce qu'on faisait avant
+				this.start();
 			} catch (MalformedURLException | RemoteException | NotBoundException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			} 
 		}

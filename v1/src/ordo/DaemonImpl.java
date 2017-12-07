@@ -17,7 +17,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	private static final long serialVersionUID = 1L;
 	
 	private String name; // Les démons ont un nom pour qu'on puisse les différencier
-	private String nomMachine;
+	private Machine machine;
 	
 	
 	protected DaemonImpl(String name) throws RemoteException {
@@ -25,12 +25,20 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.name = name;
 		System.out.println("Création du Deamon " + this.name);
         try {
-			nomMachine = InetAddress.getLocalHost().getHostName();
+			machine.setNom(InetAddress.getLocalHost().getHostName());
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+	}
+
+	public Machine getMachine() {
+		return machine;
+	}
+
+	public void setMachine(Machine machine) {
+		this.machine = machine;
 	}
 
 	@Override
@@ -82,13 +90,6 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.name = name;
 	}
 
-	public String getNomMachine() {
-		return nomMachine;
-	}
-
-	public void setNomMachine(String nomMachine) {
-		this.nomMachine = nomMachine;
-	}
 
 
 

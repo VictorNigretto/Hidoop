@@ -46,6 +46,7 @@ public class Job implements JobInterface {
 	private List<String> nomsDaemons;
 	private NameNode nn;
 	private HashMap<String,Machine> demonsToMachines = new HashMap<String,Machine>();
+	private ArrayList<Machine> listeMachinesPanne;
 
 	/*****************************************
 	Constructeurs
@@ -57,7 +58,7 @@ public class Job implements JobInterface {
 		this.initMachinesDaemons();
 		this.numberOfMaps = machines.size();
 		this.numberOfReduces = 1; //Pour la V0 uniquement
-		this.sortComparator = new SortComparatorLexico(); //TODO
+		this.sortComparator = new SortComparatorLexico(); 
 	}
 
 	// On peut aussi ajouter directement l'input
@@ -76,6 +77,7 @@ public class Job implements JobInterface {
 
 	/*****************************************
 	Start Job (méthode principale)
+	
 	*****************************************/
 	
     public void startJob (MapReduce mr) {
@@ -103,63 +105,61 @@ public class Job implements JobInterface {
 		
 		
     	// récupérer la liste des démons sur l'annuaire
-    	List<Daemon> demons = new ArrayList<>();
-    	for(int i = 0; i < this.numberOfMaps; i++) {
-    		try {
-    		    // On va récupérer les Démons en RMI sur un annuaire
-				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + machines.get(i) + "/" + nomsDaemons.get(i));
-				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +"/"+ nomsDaemons.get(i)));
-				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+    	List<Daemon> demons = RecupereDemons(0);
+    	if (demons.size() != nomsDaemons.size()) {
+    		System.out.println( "Panne qui est passée au travers du filet, ca ne va sans doute pas marcher");
+    	}else{
+    		System.out.println("OK\n");
     	}
-    	System.out.println("OK\n");
-    	
-    	do {
-    		// On initialise le callback pour que les démons puissent renvoyer leurs résultats
-    		CallBack cb = null;
-    		try {
-    			cb = new CallBackImpl();
-    		} catch (RemoteException e) {
-    			e.printStackTrace();
-    		}
-
-    		nn.ajoutFichierHdfs(inter.getFname());
-    		// Puis on va lancer les maps sur les différents démons
-    		System.out.println("Lancement des Maps ...");
-    		for(int i = 0; i < demons.size(); i++) {
-    			Daemon d = demons.get(i);
-			
-    			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
-    			Format inputTmp;
-		        if(inputFormat == Format.Type.LINE) { // LINE
-		        	inputTmp = new FormatLine(input.getFname() + "" + i);
-				} else { // KV
-		        	inputTmp = new FormatKV(input.getFname() + "" + i);
-				}
-		        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-		        nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname());
-				// on appelle le map sur le démon
-				MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
-				mapRunner.start();
+    
+		// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+		CallBack cb = null;
+		try {
+			cb = new CallBackImpl();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		// On prévient le nameNode qu'on rajoute un fichier sur la base de donnée
+		try {
+			nn.ajoutFichierHdfs(inter.getFname());
+		} catch (RemoteException e1) {
+			System.out.println("NameNode introuvable :(");
+			e1.printStackTrace();
+		}
+		
+		// Puis on va lancer les maps sur les différents démons
+		System.out.println("Lancement des Maps ...");
+		for(int i = 0; i < demons.size(); i++) {
+			Daemon d = demons.get(i);
+		
+			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
+			Format inputTmp;
+	        if(inputFormat == Format.Type.LINE) { // LINE
+	        	inputTmp = new FormatLine(input.getFname() + "" + i);
+			} else { // KV
+	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
-	    	System.out.println("OK\n");
-	
-	    	
-			// Puis on attends que tous les démons aient finis leur travail
-	    	System.out.println("Attente de la confirmation des Daemons ...");
-			try {
-				int retour = cb.waitFinishedMap(numberOfMaps);
-				if (retour == 0) {
-					mapsfinis = false;
-					
-				}
-			} catch (Exception e) {
+	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
+	        try {
+				nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname());
+			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
-    	}while (!mapsfinis);
+			// on appelle le map sur le démon
+			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
+			mapRunner.start();
+		}
+    	System.out.println("OK\n");
+
+    	
+		// Puis on attends que tous les démons aient finis leur travail
+    	System.out.println("Attente de la confirmation des Daemons ...");
+		try {
+			cb.waitFinishedMap(numberOfMaps);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    
     	System.out.println("OK\n");
 
     	
@@ -191,6 +191,46 @@ public class Job implements JobInterface {
 	Méthodes auxiliares
 	*****************************************/
 
+    private List<Daemon> RecupereDemons (int debut) {
+    	List<Daemon> demons = new ArrayList<>();
+    	for(int i = debut; i < this.numberOfMaps; i++) {
+    		try {
+    		    // On va récupérer les Démons en RMI sur un annuaire, on considère qu'il y a un démon par machine
+    			System.out.println("On se connecte à : " + machines.get(i) + "/" + nomsDaemons.get(i));
+				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +"/"+ nomsDaemons.get(i)));
+				return demons;
+				
+			} catch (RemoteException e) {
+				// Il y a un problème de connection avec le démon, donc on change de démon
+				Machine machine;
+				try {
+					//On demande au NameNode une autre machine pour savoir qui est le nouveau démon
+					machine = nn.getMachineFragment(inputFName + i, listeMachinesPanne );
+					listeMachinesPanne.add(machines.get(i));
+					String newNomDaemon = machine.getNomDaemon();
+					
+					//On se connecte au nouveau démon
+					Daemon newDemon = (Daemon) Naming.lookup("/" + machine.getNom()+ "/" + newNomDaemon);
+					demons.add(newDemon );
+					nomsDaemons.set(i, newNomDaemon);
+					
+					// Et on continue de remplir la liste démons
+					RecupereDemons(i+1);
+					
+				}catch (RemoteException e2) {
+					e2.printStackTrace();
+					System.out.println("Problèmes pour se connecter au NameNode");
+				} catch (MalformedURLException | NotBoundException e1) {
+					e1.printStackTrace();
+				}
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (NotBoundException e) {
+				e.printStackTrace();
+			}
+    	}
+		return demons;
+    }
 
     public void setNumberOfReduces(int tasks){
     	this.numberOfReduces = tasks;
@@ -263,7 +303,6 @@ public class Job implements JobInterface {
 				demonsToMachines.put(m.getNomDaemon(), m);
 			}
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 
