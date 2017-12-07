@@ -61,12 +61,13 @@ public interface NameNode extends Remote {
 	public void ajoutFichierHdfs(String nomFichier) throws RemoteException;
 	
 	/** Indique au NameNode que machine possède fragment */
-	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment) throws RemoteException;
+	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment, int numeroFragment) throws RemoteException;
 	
 	/** Indique au NameNode que l'on supprime un fichier de la base de données */
 	public void supprimeFichierHdfs(String nomFichier) throws RemoteException;
-	
 
+	/** Indique le facteur de replication des fragments */
+	public int getFacteurdereplication() throws RemoteException;
 }
 
 
