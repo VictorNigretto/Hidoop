@@ -29,6 +29,8 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		// On ouvre le formats sur le démons, pour récupérer les chunks
 		reader.open(Format.OpenMode.R);
 		writer.open(Format.OpenMode.W);
+		
+		
 
 		System.out.println("Lancement du Map ...");
 		m.map(reader, writer);

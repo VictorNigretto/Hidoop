@@ -7,6 +7,9 @@ import java.util.List;
 import ordo.Daemon;
 
 public interface NameNode {
+	
+    public enum Commande { CMD_GETfragments, CMD_GETmachinesFragments, CMD_GETallMachinesFragments, CMD_GETallFragmentFichierMachine, CMD_GETMachinesFichier, CMD_GETmachines, CMD_GETdaemons};
+
 
 	/*Coucou :) on a ajouté des méthodes dont on aurait besoin dans le NameNode dans cette interface, vous pouvez bien sur les changer ;) */
 	/* Coucou à vous ! :D ok super on s'en occupe =) */

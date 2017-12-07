@@ -24,7 +24,7 @@ public class MapRunner extends Thread {
 		try {
 			this.deamon.runMap(this.m, this.reader, this.writer, this.cb);
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			
 		}
 		
 	}

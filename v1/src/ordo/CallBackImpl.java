@@ -3,7 +3,7 @@ package ordo;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.Semaphore;
-
+import java.util.concurrent.CountDownLatch;
 public class CallBackImpl extends UnicastRemoteObject implements  CallBack {
 
     /**
@@ -11,21 +11,45 @@ public class CallBackImpl extends UnicastRemoteObject implements  CallBack {
 	 */
 	private static final long serialVersionUID = -6711165414602374343L;
 	static Semaphore nbMapsFinished;
-    static Thread waiting = new Thread(new Attendre(),"1") ;
-	static Thread sleeping = new Thread(new Dormir(),"0");
-
+    private Thread waiting; 
+	private Thread sleeping; 
+    private int nbDaemons;
+    
     public CallBackImpl() throws RemoteException {
         super();
         nbMapsFinished = new Semaphore(0);
     }
+    
 
-    /*public void run() {
-    	Runnable dormir = new Runnable() {
-    		public void run() {
-    			
-    		}
-    	}
-    }*/
+	Runnable dormir = new Runnable() {
+		public void run() {
+			try{
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+		}
+	};
+	
+	
+	Runnable attendre = new Runnable() {
+		public void run() {
+			try {
+				for(int i = 0; i < nbDaemons; i++) {
+					nbMapsFinished.acquire();
+				}
+				sleeping.interrupt();
+
+			}catch (InterruptedException e) {
+				e.printStackTrace();
+			}finally{
+				System.out.println((i+1) + " maps se sont finis.");
+			}
+		}	
+	};
+   
+	
+	
     @Override
     // Permet à un démons de confier qu'il a bien terminé son traitement de map
     public void confirmFinishedMap() throws InterruptedException, RemoteException {
@@ -33,17 +57,20 @@ public class CallBackImpl extends UnicastRemoteObject implements  CallBack {
     }
 
     @Override
-    public void waitFinishedMap(int nb) throws InterruptedException, RemoteException {
-    	
-    
-        for(int i = 0; i < nb; i++) {
-			waiting.start();
-			sleeping.start();
-
-			System.out.println((i+1) + " maps se sont finis.");
-		}
-		
+    public int waitFinishedMap(int nb) throws InterruptedException, RemoteException {
+    	waiting = new Thread(attendre,"1") ;
+    	sleeping = new Thread(dormir,"0");
+        nbDaemons = nb;
+		waiting.start();
+		sleeping.start();
+		nbDaemons = nbMapsFinished.availablePermits();
+		System.out.println("Il y a "+ nbDaemons + " Démons qui ont plantés");
+		return nbDaemons;
     }
+	
 
 
-}
+	}
+
+
+

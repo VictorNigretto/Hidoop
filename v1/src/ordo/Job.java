@@ -12,11 +12,14 @@ import hdfs.Machine;
 import hdfs.NameNode;
 import hdfs.NameNodeImpl;
 import map.MapReduce;
+import util.Message;
+
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+
 
 import config.SetUp;
 
@@ -78,7 +81,7 @@ public class Job implements JobInterface {
         // 1) lancer les maps sur tous les chunks du fichier
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
-
+    	boolean mapsfinis = false;
     	
     	System.out.println("Lancement du job ...");
     	
@@ -112,43 +115,49 @@ public class Job implements JobInterface {
     	}
     	System.out.println("OK\n");
     	
-    	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
-		CallBack cb = null;
-		try {
-			cb = new CallBackImpl();
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+    	do {
+    		// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+    		CallBack cb = null;
+    		try {
+    			cb = new CallBackImpl();
+    		} catch (RemoteException e) {
+    			e.printStackTrace();
+    		}
 
 		
-		// Puis on va lancer les maps sur les différents démons
-		System.out.println("Lancement des Maps ...");
-		for(int i = 0; i < this.numberOfMaps; i++) {
-			Daemon d = demons.get(i);
+    		// Puis on va lancer les maps sur les différents démons
+    		System.out.println("Lancement des Maps ...");
+    		for(int i = 0; i < demons.size(); i++) {
+    			Daemon d = demons.get(i);
 			
-			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
-			Format inputTmp;
-	        if(inputFormat == Format.Type.LINE) { // LINE
-	        	inputTmp = new FormatLine(input.getFname() + "" + i);
-			} else { // KV
-	        	inputTmp = new FormatKV(input.getFname() + "" + i);
+    			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
+    			Format inputTmp;
+		        if(inputFormat == Format.Type.LINE) { // LINE
+		        	inputTmp = new FormatLine(input.getFname() + "" + i);
+				} else { // KV
+		        	inputTmp = new FormatKV(input.getFname() + "" + i);
+				}
+		        Format interTmp = new FormatKV(inter.getFname() + "" + i);
+	
+				// on appelle le map sur le démon
+				MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
+				mapRunner.start();
 			}
-	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-
-			// on appelle le map sur le démon
-			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
-			mapRunner.start();
-		}
-    	System.out.println("OK\n");
-
-    	
-		// Puis on attends que tous les démons aient finis leur travail
-    	System.out.println("Attente de la confirmation des Daemons ...");
-		try {
-			int retour = cb.waitFinishedMap(numberOfMaps);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	    	System.out.println("OK\n");
+	
+	    	
+			// Puis on attend que tous les démons aient finis leur travail
+	    	System.out.println("Attente de la confirmation des Daemons ...");
+			try {
+				int retour = cb.waitFinishedMap(numberOfMaps);
+				if (retour == 0) {
+					mapsfinis = false;
+					
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}while (!mapsfinis);
     	System.out.println("OK\n");
 
     	
@@ -246,8 +255,12 @@ public class Job implements JobInterface {
 
     public void initMachinesDaemons(){
     	File file = new File("SetUp.txt");
-		NameNode nn = new NameNodeImpl(file.getAbsolutePath());/* Chemin du fichier setUp, le fichier setUp doit être au même niveau que l'endroit où job est exécuté*/
-		machines = nn.getMachines();
-		nomsDaemons = nn.getDaemons();
+    	Message m = new Message();
+    	m.openClient("localhost", 1090);/* ici, on considère que le NameNode est lancé sur le même ordi que le job */
+    	m.send(NameNode.Commande.CMD_GETmachines);
+    	machines = (List<Machine>) m.receive();
+    	m.send(NameNode.Commande.CMD_GETdaemons);
+		nomsDaemons = (List<String>) m.receive();
+		m.close();
 	} 
 }
