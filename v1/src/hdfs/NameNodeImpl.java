@@ -40,7 +40,7 @@ public class NameNodeImpl  implements NameNode {
 		try {
 			while ((ligne = br.readLine()) != null){
 				String[] machine = ligne.split(" ");
-				machines.add(new Machine(machine[1], Integer.parseInt(machine[0])));
+				machines.add(new Machine(machine[1], Integer.parseInt(machine[0]), machine[2]));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

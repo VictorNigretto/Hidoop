@@ -12,23 +12,25 @@ public class Machine implements Serializable{
 	*****************************************/
 
 	private String nom;
+	private String nomDaemon;
 	private int port;
 	private boolean alive;
 	private List<String> fragments;
 	
 	/*****************************************
-	ATTRIBUTS
+	METHODES
 	*****************************************/
 
-	public Machine(String nom, int port) {
+	public Machine(String nom, int port, String nomDeamon) {
 		this.nom = nom;
 		this.port = port;
+		this.nomDaemon = nomDeamon;
 		this.alive = true;
 		this.fragments = new ArrayList<>();		
 	}
-	
+
 	/*****************************************
-	ATTRIBUTS
+	GETS && SETS
 	*****************************************/
 
 	public String getNom() {
@@ -55,4 +57,11 @@ public class Machine implements Serializable{
 	public void setAlive(boolean alive) {
 		this.alive = alive;
 	}
+	public String getNomDaemon() {
+		return nomDaemon;
+	}
+	public void setNomDaemon(String nomDaemon) {
+		this.nomDaemon = nomDaemon;
+	}
+
 }
