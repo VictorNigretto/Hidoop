@@ -112,9 +112,8 @@ public class HdfsClient {
                 long tailleF = fichier.length();
                 int numFragment = 1;
 
-                //Selectionner la premiere machine qui recoit un fragment au hasard.
-                int randomNum = ThreadLocalRandom.current().nextInt(0, machines.size()+1);
-                Machine firstMachine = machines.get(randomNum);
+                //Selectionner la premiere machine qui recoit un fragment au hasard.                
+                Machine firstMachine = nn.getMachineMoinsPleine();
                 
                 //Dire au NameNode qu'on va ajouter un fichier à la base de données
                 nn.ajoutFichierHdfs(localFSSourceFname);
