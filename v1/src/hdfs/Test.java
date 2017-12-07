@@ -45,7 +45,7 @@ public class Test {
 		lf.write(kv);*/
 		File f = new File("data/filesample.txt");
 		
-		System.out.println("AAA");
+		System.out.println(f.getAbsolutePath());
 		
 		try {
 			f.createNewFile();

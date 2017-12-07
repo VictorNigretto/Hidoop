@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import ordo.Daemon;
+
 public interface NameNode {
 
 	/*Coucou :) on a ajouté des méthodes dont on aurait besoin dans le NameNode dans cette interface, vous pouvez bien sur les changer ;) */
@@ -36,6 +38,8 @@ public interface NameNode {
 
 	/** Renvoie la liste des toutes les machines*/
 	public List<Machine> getMachines();
+	/** Renvoie la liste des démons (dans le même ordre que les machines */
+	public List<String> getDaemons();
 }
 
 

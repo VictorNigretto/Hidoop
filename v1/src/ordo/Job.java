@@ -8,13 +8,17 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 
 import formats.*;
+import hdfs.Machine;
 import hdfs.NameNode;
+import hdfs.NameNodeImpl;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+
+import config.SetUp;
 
 import static hdfs.HdfsClient.HdfsRead;
 
@@ -35,8 +39,8 @@ public class Job implements JobInterface {
 	private SortComparator sortComparator;
 	private Format.Type interFormat;
 	private String interFName;
-	private List<String> machines; //la liste des machines sur lesquelles tournent les démons
-
+	private List<Machine> machines; //la liste des machines sur lesquelles tournent les démons
+	private List<String> nomsDaemons;
 
 	/*****************************************
 	Constructeurs
@@ -45,7 +49,7 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.initMachines();
+		this.initMachinesDaemons();
 		this.numberOfMaps = machines.size();
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
@@ -90,27 +94,23 @@ public class Job implements JobInterface {
 		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
-		NameNode nn = new NameNode();
-		machines = 
 		
 		
 		
     	// récupérer la liste des démons sur l'annuaire
-		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
-				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
+    			System.out.println("On se connecte à : " + machines.get(i) + "/" + nomsDaemons.get(i));
+				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +"/"+ nomsDaemons.get(i)));
 				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
     	}
     	System.out.println("OK\n");
-
     	
     	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
 		CallBack cb = null;
@@ -145,7 +145,7 @@ public class Job implements JobInterface {
 		// Puis on attends que tous les démons aient finis leur travail
     	System.out.println("Attente de la confirmation des Daemons ...");
 		try {
-			cb.waitFinishedMap(numberOfMaps);
+			int retour = cb.waitFinishedMap(numberOfMaps);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -244,10 +244,10 @@ public class Job implements JobInterface {
     	return this.getSortComparator();
     }
 
-    public void initMachines(){
-    	this.machines = new ArrayList<String>();
-    		machines.add("Succube");
-    		machines.add("Lucifer");
-    		machines.add("Cthun");
-	}
+    public void initMachinesDaemons(){
+    	File file = new File("SetUp.txt");
+		NameNode nn = new NameNodeImpl(file.getAbsolutePath());/* Chemin du fichier setUp, le fichier setUp doit être au même niveau que l'endroit où job est exécuté*/
+		machines = nn.getMachines();
+		nomsDaemons = nn.getDaemons();
+	} 
 }
