@@ -70,6 +70,9 @@ public class HdfsClient {
 			//Si bug, remettre les close t openclient dans la boucle for
 			System.out.println("envoyee au serveur " + mac.getNom() + ":" + mac.getPort());
 		}
+		
+		// On indique au NameNode qu'on a supprimé le fichier
+		nn.supprimeFichierHdfs(hdfsFname);
 	}
 	
     /* Pour écrire un fichier local sur le serveur HDFS
@@ -112,6 +115,9 @@ public class HdfsClient {
                 //Selectionner la premiere machine qui recoit un fragment au hasard.
                 int randomNum = ThreadLocalRandom.current().nextInt(0, machines.size()+1);
                 Machine firstMachine = machines.get(randomNum);
+                
+                //Dire au NameNode qu'on va ajouter un fichier à la base de données
+                nn.ajoutFichierHdfs(localFSSourceFname);
 
 				//On envoie des fragments de fichiers aux serveurs
                 while(br.readLine()!=null) {
@@ -133,14 +139,18 @@ public class HdfsClient {
                         m.send(Commande.CMD_WRITE);
                         System.out.println("envoyée au serveur " + firstMachine.getNom());
 
+                        String nomFragment = fichier.getName() + String.valueOf(numFragment);
                         // On envoie le nom du fichier concaténé avec son numéro de fragment
-                        m.send(fichier.getName() + String.valueOf(numFragment));
+                        m.send(nomFragment);
                         // On envoie le format du fichier
                         m.send(fmt);
 
                         // On envoie le contenu du fichier puis on ferme les sockets
                         m.send(str);
                         m.close();
+                        
+                        //Dire au NameNode qu'on a mis le fragment dans firstMachine
+                        nn.ajoutFragmentMachine(firstMachine, localFSSourceFname, nomFragment);
                         
                         //Choisir la machine suivante
                         int indice = machines.indexOf(firstMachine);
@@ -150,7 +160,7 @@ public class HdfsClient {
                             firstMachine = machines.get(indice + 1);
                         }
                         
-                        //Dire au NameNode qu'on a mis le fragment dans firstMachine
+                        
                     }
                     numFragment++;
                 }

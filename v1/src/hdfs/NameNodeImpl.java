@@ -191,7 +191,11 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 	
 	public void supprimeFichierHdfs(String nomFichier) {
 		for(Machine m : machines) {
-			// TODO !
+			for(String fragment : m.getFragments()) {
+				if (fragment.startsWith(nomFichier)){
+					m.getFragments().remove(fragment);
+				}
+			}
 		}
 		fichiers.remove(nomFichier);
 	}
