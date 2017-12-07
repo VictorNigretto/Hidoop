@@ -27,6 +27,46 @@ public class MapRunner extends Thread {
 		this.cb = cb;
 	}
 	
+	public Daemon getDeamon() {
+		return deamon;
+	}
+
+	public void setDeamon(Daemon deamon) {
+		this.deamon = deamon;
+	}
+
+	public Mapper getM() {
+		return m;
+	}
+
+	public void setM(Mapper m) {
+		this.m = m;
+	}
+
+	public Format getReader() {
+		return reader;
+	}
+
+	public void setReader(Format reader) {
+		this.reader = reader;
+	}
+
+	public Format getWriter() {
+		return writer;
+	}
+
+	public void setWriter(Format writer) {
+		this.writer = writer;
+	}
+
+	public CallBack getCb() {
+		return cb;
+	}
+
+	public void setCb(CallBack cb) {
+		this.cb = cb;
+	}
+
 	public void run() {
 		
 		try {
@@ -35,7 +75,9 @@ public class MapRunner extends Thread {
 		} catch (RemoteException e) {
 			try {
 				NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" + " NameNode" );
-				nn.getMachineFragment(reader.getFname(), deamon.getMachine());
+				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);
+				
+				this.deamon = machine.getDaemons();
 			} catch (MalformedURLException | RemoteException | NotBoundException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();

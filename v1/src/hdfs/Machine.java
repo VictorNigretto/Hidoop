@@ -17,7 +17,7 @@ public class Machine implements Serializable{
 	private List<String> fragments;
 	
 	/*****************************************
-	ATTRIBUTS
+	CONSTRUCTEUR
 	*****************************************/
 
 	public Machine(String nom, int port) {
@@ -28,7 +28,30 @@ public class Machine implements Serializable{
 	}
 	
 	/*****************************************
-	ATTRIBUTS
+	METHODES
+	*****************************************/
+	
+	public boolean containsFragment(String nomFragment) {
+		for(String f : fragments) {
+			// Si un fragment commence par ce nom
+			if(f.startsWith(nomFragment)) {
+				// alors on vérifie que c'est bien un fragment, et pas un autre fichier
+				String fin = f.replaceFirst(nomFragment, "");
+				
+				try {
+					Integer.parseInt(fin);
+					return true;
+				} catch (NumberFormatException e) {
+					// Si ça lève une exception, ce n'est pas un fragment de ce fichier
+				}
+			}
+		}
+		// Si on a parcouru tous les fichiers sans le trouver, alors c'est qu'il n'y en a pas !
+		return false;
+	}
+	
+	/*****************************************
+	GETS && SETS
 	*****************************************/
 
 	public String getNom() {
