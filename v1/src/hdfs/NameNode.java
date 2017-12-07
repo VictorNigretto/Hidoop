@@ -50,6 +50,7 @@ public interface NameNode extends Remote {
 	public List<Machine> getMachinesFichier(String nomFichier) throws RemoteException;
 
 	/** Renvoie la liste des toutes les machines*/
+
 	public List<Machine> getMachines() throws RemoteException;
 	
 	/** Indique au NameNode que l'on rajoute un fichier à la base de données */
@@ -60,6 +61,7 @@ public interface NameNode extends Remote {
 	
 	/** Indique au NameNode que l'on supprime un fichier de la base de données */
 	public void supprimeFichierHdfs(String nomFichier);
+
 }
 
 

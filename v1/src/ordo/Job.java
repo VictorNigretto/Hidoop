@@ -4,7 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import formats.*;
@@ -12,14 +14,11 @@ import hdfs.Machine;
 import hdfs.NameNode;
 import hdfs.NameNodeImpl;
 import map.MapReduce;
-import util.Message;
-
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
-
 
 import config.SetUp;
 
@@ -146,7 +145,7 @@ public class Job implements JobInterface {
 	    	System.out.println("OK\n");
 	
 	    	
-			// Puis on attend que tous les démons aient finis leur travail
+			// Puis on attends que tous les démons aient finis leur travail
 	    	System.out.println("Attente de la confirmation des Daemons ...");
 			try {
 				int retour = cb.waitFinishedMap(numberOfMaps);
@@ -254,13 +253,15 @@ public class Job implements JobInterface {
     }
 
     public void initMachinesDaemons(){
-    	File file = new File("SetUp.txt");
-    	Message m = new Message();
-    	m.openClient("localhost", 1090);/* ici, on considère que le NameNode est lancé sur le même ordi que le job */
-    	m.send(NameNode.Commande.CMD_GETmachines);
-    	machines = (List<Machine>) m.receive();
-    	m.send(NameNode.Commande.CMD_GETdaemons);
-		nomsDaemons = (List<String>) m.receive();
-		m.close();
+		NameNode nn;
+		try {
+			nn = ((NameNode) Naming.lookup("/localhost:1090/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
+			machines = nn.getMachines();
+			nomsDaemons = nn.getDaemons();
+		} catch (MalformedURLException | RemoteException | NotBoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+
 	} 
 }
