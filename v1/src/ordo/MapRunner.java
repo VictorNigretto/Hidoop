@@ -91,7 +91,7 @@ public class MapRunner extends Thread {
 				*/
 				
 				// On demande au NameNode une autre machine pour savoir qui est le nouveau démon
-				NameNode nn = (NameNode) Naming.lookup("/localhost:1090/" +"NameNode");
+				NameNode nn = (NameNode) Naming.lookup("/localhost:1199/" +"NameNode");
 				listeMachinesPanne.add(((DaemonImpl) deamon).getMachine());
 				Machine machine = nn.getMachineFragment(reader.getFname(), listeMachinesPanne);
 				String newNomDaemon = machine.getNomDaemon();

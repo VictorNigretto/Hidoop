@@ -141,7 +141,7 @@ public class Job implements JobInterface {
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
 	        try {
-				nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname());
+				nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname(), i);
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
@@ -196,8 +196,8 @@ public class Job implements JobInterface {
     	for(int i = debut; i < this.numberOfMaps; i++) {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire, on considère qu'il y a un démon par machine
-    			System.out.println("On se connecte à : " + machines.get(i) + "/" + nomsDaemons.get(i));
-				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +"/"+ nomsDaemons.get(i)));
+    			System.out.println("On se connecte à : " + machines.get(i) + ":1199/" + nomsDaemons.get(i));
+				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +":1199/"+ nomsDaemons.get(i)));
 				return demons;
 				
 			} catch (RemoteException e) {
@@ -210,7 +210,7 @@ public class Job implements JobInterface {
 					String newNomDaemon = machine.getNomDaemon();
 					
 					//On se connecte au nouveau démon
-					Daemon newDemon = (Daemon) Naming.lookup("/" + machine.getNom()+ "/" + newNomDaemon);
+					Daemon newDemon = (Daemon) Naming.lookup("/" + machine.getNom()+ ":1199/" + newNomDaemon);
 					demons.add(newDemon );
 					nomsDaemons.set(i, newNomDaemon);
 					
@@ -297,7 +297,7 @@ public class Job implements JobInterface {
 
     public void initMachinesDaemons(){
 		try {
-			nn = ((NameNode) Naming.lookup("/localhost:1090/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
+			nn = ((NameNode) Naming.lookup("/localhost:1199/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
 			machines = nn.getMachines();
 			for (Machine m : machines) {
 				demonsToMachines.put(m.getNomDaemon(), m);
