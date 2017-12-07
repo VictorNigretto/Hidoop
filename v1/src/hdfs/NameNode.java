@@ -40,6 +40,10 @@ public interface NameNode extends Remote {
 	 */
 	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) throws RemoteException;
 	
+	/** Renvoie la machine qui contient le moins de fragments */
+	public Machine getMachineMoinsPleine() throws RemoteException;
+
+	
 	/** Renvoie la liste des machines pour accèder à ce fragment. */
 	public List<Machine> getAllMachinesFragment(String nomFragment) throws RemoteException;
 	
@@ -54,13 +58,14 @@ public interface NameNode extends Remote {
 	public List<Machine> getMachines() throws RemoteException;
 	
 	/** Indique au NameNode que l'on rajoute un fichier à la base de données */
-	public void ajoutFichierHdfs(String nomFichier);
+	public void ajoutFichierHdfs(String nomFichier) throws RemoteException;
 	
 	/** Indique au NameNode que machine possède fragment */
-	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment);
+	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment) throws RemoteException;
 	
 	/** Indique au NameNode que l'on supprime un fichier de la base de données */
-	public void supprimeFichierHdfs(String nomFichier);
+	public void supprimeFichierHdfs(String nomFichier) throws RemoteException;
+	
 
 }
 
