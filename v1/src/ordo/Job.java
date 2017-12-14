@@ -197,7 +197,7 @@ public class Job implements JobInterface {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire, on considère qu'il y a un démon par machine
     			System.out.println("On se connecte à : " + machines.get(i) + ":1199/" + nomsDaemons.get(i));
-				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +":1199/"+ nomsDaemons.get(i)));
+				demons.add((Daemon) Naming.lookup("//"+machines.get(i).getNom() +":1199/"+ nomsDaemons.get(i)));
 				return demons;
 				
 			} catch (RemoteException e) {
@@ -210,7 +210,7 @@ public class Job implements JobInterface {
 					String newNomDaemon = machine.getNomDaemon();
 					
 					//On se connecte au nouveau démon
-					Daemon newDemon = (Daemon) Naming.lookup("/" + machine.getNom()+ ":1199/" + newNomDaemon);
+					Daemon newDemon = (Daemon) Naming.lookup("//" + machine.getNom()+ ":1199/" + newNomDaemon);
 					demons.add(newDemon );
 					nomsDaemons.set(i, newNomDaemon);
 					
@@ -297,7 +297,7 @@ public class Job implements JobInterface {
 
     public void initMachinesDaemons(){
 		try {
-			nn = ((NameNode) Naming.lookup("/localhost:1199/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
+			nn = ((NameNode) Naming.lookup("//localhost:1199/" + "NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
 			machines = nn.getMachines();
 			for (Machine m : machines) {
 				demonsToMachines.put(m.getNomDaemon(), m);

@@ -20,10 +20,10 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	private Machine machine;
 	
 	
-	protected DaemonImpl(String nameMachine, int port, String name ) throws RemoteException {
+	protected DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
 		super();
-		this.name = name;
-		this.machine = new Machine(nameMachine, port, name);
+		this.name = nomDaemon;
+		this.machine = new Machine(name, port, nomDaemon);
 		System.out.println("Création du Deamon " + this.name);
 		
         try {
@@ -71,7 +71,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	public static void main(String args[]) {
 		try {
 			
-			Daemon d = new DaemonImpl(args[0], Integer.parseInt(args[2]), args[1]);
+			Daemon d = new DaemonImpl(args[0], Integer.parseInt(args[1]), args[2]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
             //Registry registry = LocateRegistry.createRegistry(1099);

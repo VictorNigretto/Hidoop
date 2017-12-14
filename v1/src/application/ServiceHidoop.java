@@ -114,9 +114,9 @@ public class ServiceHidoop {
                 // Lancer l'opération
                 System.out.println("Suppression ...");
                     // Lancer les Serveurs
-                    String[] cmdServ1 = {"6666"};
-                    String[] cmdServ2 = {"5555"};
-                    String[] cmdServ3 = {"4444"};
+                    String[] cmdServ1 = {"6662"};
+                    String[] cmdServ2 = {"5552"};
+                    String[] cmdServ3 = {"4442"};
                     new ServerRunner(cmdServ1).start();
                     new ServerRunner(cmdServ2).start();
                     new ServerRunner(cmdServ3).start();
@@ -153,9 +153,9 @@ public class ServiceHidoop {
                 String[] cmdDaemon1 = {"Succube"};
                 String[] cmdDaemon2 = {"Lucifer"};
                 String[] cmdDaemon3 = {"Cthun"};
-                new DaemonRunner(cmdDaemon1).start();
-                new DaemonRunner(cmdDaemon2).start();
-                new DaemonRunner(cmdDaemon3).start();
+                new DaemonRunner("Succube", 6662, "localhost").start();
+                new DaemonRunner("Lucifer", 5552, "localhost").start();
+                new DaemonRunner("Cthun", 4442, "localhost").start();
                 // Lancer le MapReduce !
                 // Pour le moment on va le lancer à la main ! :D
                 //String [] cmdMr = {file};

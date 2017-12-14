@@ -56,6 +56,7 @@ public class LanceurHDFS {
         	// Lancer les Daemons (en local)
     		String[] nomDeamon = {m.getNomDaemon()};
             new DaemonRunner(m.getNomDaemon(), m.getPort(), m.getNom()).start();
+           
 
     	}
     }
