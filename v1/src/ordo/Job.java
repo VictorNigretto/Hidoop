@@ -73,6 +73,7 @@ public class Job implements JobInterface {
 		this.resReduceFName = inputFName + "-res";
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
+
 	}
 
 	/*****************************************
@@ -85,6 +86,9 @@ public class Job implements JobInterface {
         // 1) lancer les maps sur tous les chunks du fichier
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
+		this.nomsDaemons = new ArrayList<>();
+		this.listeMachinesPanne = new ArrayList<>();
+		
     	boolean mapsfinis = false;
     	
     	System.out.println("Lancement du job ...");
@@ -101,9 +105,6 @@ public class Job implements JobInterface {
 		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
-		
-		
-		
     	// récupérer la liste des démons sur l'annuaire
     	List<Daemon> demons = RecupereDemons(0);
     	if (demons.size() != nomsDaemons.size()) {
@@ -196,12 +197,17 @@ public class Job implements JobInterface {
     	for(int i = debut; i < this.numberOfMaps; i++) {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire, on considère qu'il y a un démon par machine
-    			System.out.println("On se connecte à : " + machines.get(i) + ":1199/" + nomsDaemons.get(i));
-				demons.add((Daemon) Naming.lookup("//"+machines.get(i).getNom() +":1199/"+ nomsDaemons.get(i)));
+    			//System.out.println("On se connecte à : " + machines.get(i) + ":1199/" + nomsDaemons.get(i));
+    			String nom = machines.get(i).getNomDaemon();
+				demons.add((Daemon) Naming.lookup("//"+machines.get(i).getNom() +":1199/"+ nom));
+				nomsDaemons.add(nom);
 				return demons;
 				
 			} catch (RemoteException e) {
 				// Il y a un problème de connection avec le démon, donc on change de démon
+				System.out.println("oups");
+				e.printStackTrace();
+
 				Machine machine;
 				try {
 					//On demande au NameNode une autre machine pour savoir qui est le nouveau démon
