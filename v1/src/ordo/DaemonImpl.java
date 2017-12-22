@@ -10,13 +10,14 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import formats.Format;
 import hdfs.Machine;
+import hdfs.NameNode;
 import map.Mapper;
 
 public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 	private static final long serialVersionUID = 1L;
 	
-	private String name; // Les démons ont un nom pour qu'on puisse les différencier
+	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
 	private Machine machine;
 	
 	
@@ -79,6 +80,11 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
+            
+            RessourceManager rm = ((RessourceManager) Naming.lookup("//localhost:1199/" + "RessourceManager" ));
+            while (true) {
+            	rm.DemonFonctionne(name);
+            }
 			
 		} catch (Exception e) {
 			e.printStackTrace();
