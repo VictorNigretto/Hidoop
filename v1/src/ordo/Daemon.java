@@ -5,7 +5,6 @@ import java.rmi.RemoteException;
 
 import map.Mapper;
 import formats.Format;
-import hdfs.Machine;
 
 // Le programme qu'on fait tourner sur les dataNode
 // Il a pour but d'exécuter les maps qu'on lui envoie
