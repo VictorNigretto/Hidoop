@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import static hdfs.HdfsClient.HdfsRead;
-
+import hdfs.NameNode;
 
 public class Job implements JobInterface {
 	
@@ -90,8 +90,6 @@ public class Job implements JobInterface {
 		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
-		NameNode nn = new NameNode();
-		machines = 
 		
 		
 		
