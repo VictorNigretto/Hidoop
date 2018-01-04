@@ -12,12 +12,22 @@ public class HidoopLanceur {
      */
 
     public static void main (String[] args) {
+        /* On ajoute le RessourceManager à l'annuaire */
+        String[] cmdRm = {"setUp.txt"};
+        RessourceManager resMan = null;
+        try {
+            resMan = RessourceManager.lancerRM(cmdRm);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
         /* On lance hdfs ( ce qui lance aussi les daemons*/
         LanceurHDFS.main(args);
 
-        /* On ajoute le RessourceManager à l'annuaire  et on le lance*/
+       /* On lancer le RM */
         try {
-            RessourceManager.main(args);
+
+            RessourceManager.main(resMan);
         } catch (RemoteException e) {
             e.printStackTrace();
         }

@@ -8,6 +8,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.Semaphore;
+
 import formats.Format;
 import hdfs.Machine;
 import hdfs.NameNode;
@@ -19,7 +21,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	
 	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
 	private Machine machine;
-	
+
 	
 	protected DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
 		super();
@@ -80,8 +82,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
-            
-            RessourceManager rm = ((RessourceManager) Naming.lookup("//localhost:1199/" + "RessourceManager" ));
+            RessourceManager rm = ((RessourceManager) Naming.lookup("//localhost:1199/RessourceManager"));
             while (true) {
             	rm.DemonFonctionne(name);
             }

@@ -43,13 +43,17 @@ public class RessourceManager extends UnicastRemoteObject {
 		}
 		String ligne;
 		demons = new ArrayList<>();
+		demonsFonctionnent = new HashMap<>();
+		int i = 0;
 		try {
 			while ((ligne = br.readLine()) != null){
+				System.out.println("ajout du démon " + i);
+
 				String[] demon = ligne.split(" ");
 				demons.add(new DaemonImpl(demon[2], Integer.parseInt(demon[0]), demon[1]));
-				
+
 				demonsFonctionnent.put(demon[2], true);
-				
+				i++;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -64,17 +68,14 @@ public class RessourceManager extends UnicastRemoteObject {
 	/*****************************************
 	MAIN
 	*****************************************/
-	
-	public static void main(String[] args) throws RemoteException {
-		// On vérifie que l'utilisateur lance le main correctement
+	public static RessourceManager lancerRM(String[] args) throws RemoteException {
 		if(args.length != 1){
-			System.out.println("Usage : java NameNodeImple <file>");
-			return;
+			System.out.println("Usage : java RessourceManager <file>");
+			return null;
 		}
-		
 		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
 		RessourceManager ResMan = new RessourceManager(args[0]);
-		
+
 		// Se connecter à l'annuaire
 		try {
 			Naming.rebind("//localhost:1199/RessourceManager",  ResMan);
@@ -82,19 +83,35 @@ public class RessourceManager extends UnicastRemoteObject {
 			System.out.println("Echec de la connexion du RessourceManager à l'annuaire !");
 			e.printStackTrace();
 		}
+		return ResMan;
+	}
+	public static void main(RessourceManager ResMan) throws RemoteException {
+		// On vérifie que l'utilisateur lance le main correctement
+
+		
+		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
+		//RessourceManager ResMan = new RessourceManager(args[0]);
+		
+		// Se connecter à l'annuaire
+		//try {
+		//	Naming.rebind("//localhost:1199/RessourceManager",  ResMan);
+		//} catch (RemoteException | MalformedURLException e) {
+		//	System.out.println("Echec de la connexion du RessourceManager à l'annuaire !");
+		//	e.printStackTrace();
+		//}
 		
 		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
 		while (true) {
 			for (Daemon d : demons) {
-				demonsFonctionnent.put(((DaemonImpl) d).getName(), false);
+				ResMan.demonsFonctionnent.put(((DaemonImpl) d).getName(), false);
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				if (demonsFonctionnent.get(((DaemonImpl) d).getName()) == false) {
-					supprimeDemon(((DaemonImpl) d).getName());
+				if (ResMan.demonsFonctionnent.get(((DaemonImpl) d).getName()) == false) {
+					ResMan.supprimeDemon(((DaemonImpl) d).getName());
 				}
 			}
 		}
