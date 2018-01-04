@@ -82,7 +82,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
-            RessourceManager rm = ((RessourceManager) Naming.lookup("//localhost:1199/RessourceManager"));
+            RMInterface rm = ((RMInterface) Naming.lookup("//localhost:1199/RessourceManager"));
             while (true) {
             	rm.DemonFonctionne(name);
             }

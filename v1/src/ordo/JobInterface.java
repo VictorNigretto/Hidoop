@@ -4,6 +4,7 @@
 
 package ordo;
 
+import hdfs.NameNode;
 import map.MapReduce;
 import formats.Format;
 

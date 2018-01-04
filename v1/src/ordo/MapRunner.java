@@ -3,6 +3,7 @@ package ordo;
 import java.rmi.RemoteException;
 
 import formats.Format;
+import hdfs.Machine;
 import map.Mapper;
 
 public class MapRunner extends Thread {

@@ -17,17 +17,18 @@ import hdfs.Fichier;
 import hdfs.Machine;
 
 
-public class RessourceManager extends UnicastRemoteObject {
+public class RessourceManager extends UnicastRemoteObject implements RMInterface {
 
 	/*****************************************
 	ATTRIBUTS
 	*****************************************/	
 	
 	private Map<String, Fichier> fichiers; // code un fichier, la clé est son nom, la valeur est un objet Fichier
-	static private List<Daemon> demons;
-	static private Map<String,Boolean> demonsFonctionnent;
-	
-	
+	private List<Daemon> demons;
+	private Map<String,Boolean> demonsFonctionnent;
+
+
+
 	/*****************************************
 	CONSTRUCTEUR
 	*****************************************/
@@ -68,13 +69,13 @@ public class RessourceManager extends UnicastRemoteObject {
 	/*****************************************
 	MAIN
 	*****************************************/
-	public static RessourceManager lancerRM(String[] args) throws RemoteException {
+	public static RMInterface lancerRM(String[] args) throws RemoteException {
 		if(args.length != 1){
 			System.out.println("Usage : java RessourceManager <file>");
 			return null;
 		}
 		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
-		RessourceManager ResMan = new RessourceManager(args[0]);
+		RMInterface ResMan = new RessourceManager(args[0]);
 
 		// Se connecter à l'annuaire
 		try {
@@ -85,7 +86,7 @@ public class RessourceManager extends UnicastRemoteObject {
 		}
 		return ResMan;
 	}
-	public static void main(RessourceManager ResMan) throws RemoteException {
+	public static void main(RMInterface ResMan) throws RemoteException {
 		// On vérifie que l'utilisateur lance le main correctement
 
 		
@@ -102,15 +103,15 @@ public class RessourceManager extends UnicastRemoteObject {
 		
 		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
 		while (true) {
-			for (Daemon d : demons) {
-				ResMan.demonsFonctionnent.put(((DaemonImpl) d).getName(), false);
+			for (Daemon d : ResMan.getDemons()) {
+				ResMan.getDemonsFonctionnent().put(((DaemonImpl) d).getName(), false);
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				if (ResMan.demonsFonctionnent.get(((DaemonImpl) d).getName()) == false) {
+				if (ResMan.getDemonsFonctionnent().get(((DaemonImpl) d).getName()) == false) {
 					ResMan.supprimeDemon(((DaemonImpl) d).getName());
 				}
 			}
@@ -126,10 +127,38 @@ public class RessourceManager extends UnicastRemoteObject {
 		demonsFonctionnent.put(nomDemon, true);
 	}
 	
-	public static void supprimeDemon(String nomDemon) {
+	public void supprimeDemon(String nomDemon) {
 		demonsFonctionnent.remove(nomDemon);
 		demons.remove(nomDemon);
 	}
-	
+
+	public List<Daemon> getDemons() {
+		return demons;
+	}
+
+	public Map<String, Boolean> getDemonsFonctionnent() {
+		return demonsFonctionnent;
+	}
+
+
+
+	public void setFichiers(Map<String, Fichier> fichiers) {
+		this.fichiers = fichiers;
+	}
+
+	public void setDemons(List<Daemon> demons) {
+		this.demons = demons;
+	}
+
+	public void setDemonsFonctionnent(Map<String, Boolean> demonsFonctionnent) {
+		this.demonsFonctionnent = demonsFonctionnent;
+	}
+
+
+
+
+	public Map<String, Fichier> getFichiers() {
+		return fichiers;
+	}
 	//méthode donnant un Demon contenant un fragment de fichier
 }

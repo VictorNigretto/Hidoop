@@ -4,10 +4,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import formats.*;
+import hdfs.Machine;
 import hdfs.NameNode;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
@@ -121,6 +124,20 @@ public class Job implements JobInterface {
 		
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
+
+		// enregistrement sur le nameNode du fichier intermédiaire
+		NameNode nn = null;
+		try {
+			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
+			nn.ajoutFichierHdfs(inter.getFname());
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
 		for(int i = 0; i < this.numberOfMaps; i++) {
 			Daemon d = demons.get(i);
 			
@@ -136,6 +153,14 @@ public class Job implements JobInterface {
 			// on appelle le map sur le démon
 			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
+
+			//On prévient le NameNode qu'on a ajouté un fragment à la machine
+			try {
+
+				nn.ajoutFragmentMachine(((Daemon) d).getMachine(), inter.getFname(), inter.getFname() +"" + i, i);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
 		}
     	System.out.println("OK\n");
 
@@ -152,6 +177,7 @@ public class Job implements JobInterface {
     	
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
+    	System.out.println(inter.getFname());
 		HdfsRead(inter.getFname(), resReduce.getFname());
     	System.out.println("OK\n");
 		
