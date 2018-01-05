@@ -29,12 +29,12 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.machine = new Machine(name, port, nomDaemon);
 		System.out.println("Création du Deamon " + this.name);
 		
-        try {
-        	
-			machine.setNom(InetAddress.getLocalHost().getHostName());
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
+        //try {
+        	//TODO il faut le garder mais probleme de compatibilité avec le namenode ( pour lui, tous les noms de machine sont des localhost)
+			//machine.setNom(InetAddress.getLocalHost().getHostName());
+		//} catch (UnknownHostException e) {
+		//	e.printStackTrace();
+		//}
 
 	}
 

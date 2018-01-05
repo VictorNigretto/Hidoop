@@ -177,7 +177,6 @@ public class Job implements JobInterface {
     	
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
-    	System.out.println(inter.getFname());
 		HdfsRead(inter.getFname(), resReduce.getFname());
     	System.out.println("OK\n");
 		

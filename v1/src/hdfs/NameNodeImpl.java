@@ -113,7 +113,7 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 				mRes = m;
 			}
 		}
-		
+
 		// Renvoyer le résultat
 		return mRes;
 	}
@@ -187,11 +187,15 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 	}
 	
 	public void ajoutFichierHdfs(String nomFichier) throws RemoteException {
-		fichiers.put(nomFichier, new Fichier(nomFichier));
+		Fichier f = new Fichier(nomFichier);
+		f.setNbFragments(0);
+		fichiers.put(nomFichier, f);
+
 	}
 	
 	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment, int numeroFragment) throws RemoteException {
 		for(Machine m : machines) {
+
 			if(machine.getNom().equals(m.getNom())
 			&& machine.getPort() == m.getPort()
 			&& machine.getNomDaemon().equals(m.getNomDaemon())) {
