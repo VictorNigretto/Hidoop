@@ -123,7 +123,7 @@ public class HdfsClient {
 
                 /*Debut du nouveau code*/
 				//Lire la taille du fichier
-                long tailleF = fichier.length();
+                long tailleFichier = fichier.length();
                 int numFragment = 0;
 
                 //Selectionner la premiere machine qui recoit un fragment au hasard.                
@@ -133,7 +133,12 @@ public class HdfsClient {
                 nn.ajoutFichierHdfs(localFSSourceFname);
                 
                 // On calcul le nombre de fragments que l'on va envoyer !
-                int nbFragments = nbServeurs;
+                int nbFragments = 0;
+                br.mark(999_999_999);
+                while(br.readLine() != null && nbFragments < nbServeurs) {
+                	nbFragments ++;
+				}
+                br.reset();
 
 				//On envoie des fragments de fichiers aux serveurs
                 for(int k = 0; k < nbFragments; k++) {
@@ -143,7 +148,7 @@ public class HdfsClient {
                 	String ligne = null;
 
                     //On calcule le String à envoyer pour un fragment
-                    while ((tailleF / nbServeurs) > tailleFrag && (ligne = br.readLine()) != null) {
+                    while ((tailleFichier / nbFragments) > tailleFrag && (ligne = br.readLine()) != null) {
                     	ligne += "\n";
                         str += ligne;
                         tailleFrag += ligne.getBytes().length;
@@ -275,6 +280,7 @@ public class HdfsClient {
 	public static void main(String[] args) {
         // java HdfsClient <read|write> <line|kv> <file>
 
+        double time = System.currentTimeMillis();
         try {
             if (args.length<2) {usage(); return;}
 
@@ -292,6 +298,7 @@ public class HdfsClient {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        System.out.println("Temps : " + (System.currentTimeMillis() - time));
     }
 
 }

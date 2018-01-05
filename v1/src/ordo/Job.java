@@ -142,7 +142,8 @@ public class Job implements JobInterface {
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
 	        try {
-				nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname(), i);
+	        	Machine m = demonsToMachines.get(((DaemonImpl)d).getName());
+				nn.ajoutFragmentMachine(m, inter.getFname(), interTmp.getFname(), i);
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
