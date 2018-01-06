@@ -12,19 +12,15 @@ import java.rmi.RemoteException;
 import formats.*;
 import hdfs.Machine;
 import hdfs.NameNode;
-import hdfs.NameNodeImpl;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import config.SetUp;
-
 import static hdfs.HdfsClient.HdfsRead;
-
+import hdfs.NameNode;
 
 public class Job implements JobInterface {
 	
@@ -42,11 +38,8 @@ public class Job implements JobInterface {
 	private SortComparator sortComparator;
 	private Format.Type interFormat;
 	private String interFName;
-	private List<Machine> machines; //la liste des machines sur lesquelles tournent les démons
-	private List<String> nomsDaemons;
-	private NameNode nn;
-	private HashMap<String,Machine> demonsToMachines = new HashMap<String,Machine>();
-	private ArrayList<Machine> listeMachinesPanne;
+	private List<String> machines; //la liste des machines sur lesquelles tournent les démons
+
 
 	/*****************************************
 	Constructeurs
@@ -55,10 +48,10 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.initMachinesDaemons();
+		this.initMachines();
 		this.numberOfMaps = machines.size();
 		this.numberOfReduces = 1; //Pour la V0 uniquement
-		this.sortComparator = new SortComparatorLexico(); 
+		this.sortComparator = new SortComparatorLexico(); //TODO
 	}
 
 	// On peut aussi ajouter directement l'input
@@ -78,7 +71,6 @@ public class Job implements JobInterface {
 
 	/*****************************************
 	Start Job (méthode principale)
-	
 	*****************************************/
 	
     public void startJob (MapReduce mr) {
@@ -86,11 +78,7 @@ public class Job implements JobInterface {
         // 1) lancer les maps sur tous les chunks du fichier
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
-		this.nomsDaemons = new ArrayList<>();
-		this.listeMachinesPanne = new ArrayList<>();
-		
-    	boolean mapsfinis = false;
-    	
+
     	System.out.println("Lancement du job ...");
     	
     	
@@ -106,33 +94,50 @@ public class Job implements JobInterface {
 		output = new FormatKV(outputFName);
 
     	// récupérer la liste des démons sur l'annuaire
-    	List<Daemon> demons = RecupereDemons(0);
-    	if (demons.size() != nomsDaemons.size()) {
-    		System.out.println( "Panne qui est passée au travers du filet, ca ne va sans doute pas marcher");
-    	}else{
-    		System.out.println("OK\n");
+		System.out.println("Récupération de la liste des Daemons ...");
+    	List<Daemon> demons = new ArrayList<>();
+    	for(int i = 0; i < this.numberOfMaps; i++) {
+    		try {
+    		    // On va récupérer les Démons en RMI sur un annuaire
+				// TODO => généraliser à plusieurs démons sur plusieurs machines
+    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
+				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
+				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
     	}
-    
-		// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+    	System.out.println("OK\n");
+
+    	
+    	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
 		CallBack cb = null;
 		try {
 			cb = new CallBackImpl();
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-		// On prévient le nameNode qu'on rajoute un fichier sur la base de donnée
-		try {
-			nn.ajoutFichierHdfs(inter.getFname());
-		} catch (RemoteException e1) {
-			System.out.println("NameNode introuvable :(");
-			e1.printStackTrace();
-		}
+
 		
 		// Puis on va lancer les maps sur les différents démons
 		System.out.println("Lancement des Maps ...");
-		for(int i = 0; i < demons.size(); i++) {
+
+		// enregistrement sur le nameNode du fichier intermédiaire
+		NameNode nn = null;
+		try {
+			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
+			nn.ajoutFichierHdfs(inter.getFname());
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		for(int i = 0; i < this.numberOfMaps; i++) {
 			Daemon d = demons.get(i);
-		
+			
 			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
 			Format inputTmp;
 	        if(inputFormat == Format.Type.LINE) { // LINE
@@ -141,14 +146,18 @@ public class Job implements JobInterface {
 	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-	        try {
-				nn.ajoutFragmentMachine(demonsToMachines.get(((DaemonImpl)d).getName()), inter.getFname(), interTmp.getFname(), i);
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
+
 			// on appelle le map sur le démon
 			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
+
+			//On prévient le NameNode qu'on a ajouté un fragment à la machine
+			try {
+
+				nn.ajoutFragmentMachine(((Daemon) d).getMachine(), inter.getFname(), inter.getFname() +"" + i, i);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
 		}
     	System.out.println("OK\n");
 
@@ -160,7 +169,6 @@ public class Job implements JobInterface {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    
     	System.out.println("OK\n");
 
     	
@@ -191,52 +199,6 @@ public class Job implements JobInterface {
 	/*****************************************
 	Méthodes auxiliares
 	*****************************************/
-
-    private List<Daemon> RecupereDemons (int debut) {
-    	List<Daemon> demons = new ArrayList<>();
-    	for(int i = debut; i < this.numberOfMaps; i++) {
-    		try {
-    		    // On va récupérer les Démons en RMI sur un annuaire, on considère qu'il y a un démon par machine
-    			//System.out.println("On se connecte à : " + machines.get(i) + ":1199/" + nomsDaemons.get(i));
-    			String nom = machines.get(i).getNomDaemon();
-				demons.add((Daemon) Naming.lookup("//"+machines.get(i).getNom() +":1199/"+ nom));
-				nomsDaemons.add(nom);
-				return demons;
-				
-			} catch (RemoteException e) {
-				// Il y a un problème de connection avec le démon, donc on change de démon
-				System.out.println("oups");
-				e.printStackTrace();
-
-				Machine machine;
-				try {
-					//On demande au NameNode une autre machine pour savoir qui est le nouveau démon
-					machine = nn.getMachineFragment(inputFName + i, listeMachinesPanne );
-					listeMachinesPanne.add(machines.get(i));
-					String newNomDaemon = machine.getNomDaemon();
-					
-					//On se connecte au nouveau démon
-					Daemon newDemon = (Daemon) Naming.lookup("//" + machine.getNom()+ ":1199/" + newNomDaemon);
-					demons.add(newDemon );
-					nomsDaemons.set(i, newNomDaemon);
-					
-					// Et on continue de remplir la liste démons
-					RecupereDemons(i+1);
-					
-				}catch (RemoteException e2) {
-					e2.printStackTrace();
-					System.out.println("Problèmes pour se connecter au NameNode");
-				} catch (MalformedURLException | NotBoundException e1) {
-					e1.printStackTrace();
-				}
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			} catch (NotBoundException e) {
-				e.printStackTrace();
-			}
-    	}
-		return demons;
-    }
 
     public void setNumberOfReduces(int tasks){
     	this.numberOfReduces = tasks;
@@ -301,16 +263,10 @@ public class Job implements JobInterface {
     	return this.getSortComparator();
     }
 
-    public void initMachinesDaemons(){
-		try {
-			nn = ((NameNode) Naming.lookup("//localhost:1199/" + "NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
-			machines = nn.getMachines();
-			for (Machine m : machines) {
-				demonsToMachines.put(m.getNomDaemon(), m);
-			}
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			e.printStackTrace();
-		} 
-
-	} 
+    public void initMachines(){
+    	this.machines = new ArrayList<String>();
+    		machines.add("Succube");
+    		machines.add("Lucifer");
+    		machines.add("Cthun");
+	}
 }

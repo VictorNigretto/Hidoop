@@ -121,10 +121,9 @@ public class TerminalHDFS {
 	        
         // Lancer le MapReduce !
         // Pour le moment on va le lancer à la main ! :D
-        //String [] cmdMr = {file};
-        //MyMapReduce.main(cmdMr);
-        //new MyMapReduceRunner(cmdMr).start();
-        
+        String [] cmdMr = {file};
+        MyMapReduce.main(cmdMr);
+
         // Lancer un script qui lance le MyMapReduce !!!
         // Recupérer le repertoire courant
         String pwd = System.getProperty("user.dir");
