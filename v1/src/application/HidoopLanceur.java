@@ -32,11 +32,6 @@ public class HidoopLanceur {
         }
 
 
-        try {
-            resMan = RessourceManager.lancerRM(cmdRm);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
 
         /* On lance hdfs ( ce qui lance aussi les daemons*/
         // Lancer le NameNode
@@ -55,6 +50,14 @@ public class HidoopLanceur {
             System.out.println("Echec du chargement du NameNode");
             e.printStackTrace();
         }
+        // On lance le RessourceManager
+        RMInterface ResMan = null;
+        try {
+
+            ResMan = RessourceManager.lancerRM(nn, cmdNn[0]);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         List<Machine> machines = nn.getMachines();
         for (Machine m : machines){
             //Lancer une machine (en local)
@@ -68,7 +71,7 @@ public class HidoopLanceur {
         }
 
        /* On lancer le RM */
-        threadRM monThread = new threadRM(resMan);
+        threadRM monThread = new threadRM(ResMan);
         monThread.start();
 
         /* On demande à l'utilisateur s'il veut utiliser hdfs ou hidoop */

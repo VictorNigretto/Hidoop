@@ -8,13 +8,11 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import hdfs.Fichier;
 import hdfs.Machine;
+import hdfs.NameNode;
 
 
 public class RessourceManager extends UnicastRemoteObject implements RMInterface {
@@ -23,19 +21,25 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	ATTRIBUTS
 	*****************************************/	
 	
-	private Map<String, Fichier> fichiers; // code un fichier, la clé est son nom, la valeur est un objet Fichier
-	private List<Daemon> demons;
+	private List<String> fragments; // liste des fragments de chaques fichiers reconnus par le RessourceManager
+	private Map<String,List<String>> demonsDuFragment;//la clef est un nom de fragment et la valeur est la liste des daemons associée au fragment
 	private Map<String,Boolean> demonsFonctionnent;
-
-
+	private NameNode notreNameNode;
+	private Collection<String> demons;
 
 	/*****************************************
 	CONSTRUCTEUR
 	*****************************************/
 	
 	//Initialisation de la liste des serveurs
-	public RessourceManager(String fichierSetup) throws RemoteException{
+	public RessourceManager(NameNode nn, String fichierSetup) throws RemoteException{
 		// On récupère la liste des Machines
+		this.notreNameNode = nn;
+		this.fragments = new ArrayList<String>();
+		this.demonsFonctionnent = new HashMap<String, Boolean>();
+		this.demonsDuFragment = new HashMap<String, List<String>>();
+
+		// on initialise la liste des demons
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(fichierSetup));
@@ -43,39 +47,26 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 			System.out.println("Fichier " + fichierSetup + " introuvable");
 		}
 		String ligne;
-		demons = new ArrayList<>();
-		demonsFonctionnent = new HashMap<>();
-		int i = 0;
+		demons = new ArrayList<String>();
 		try {
 			while ((ligne = br.readLine()) != null){
-				System.out.println("ajout du démon " + i);
-
 				String[] demon = ligne.split(" ");
-				demons.add(new DaemonImpl(demon[2], Integer.parseInt(demon[0]), demon[1]));
-
-				demonsFonctionnent.put(demon[2], true);
-				i++;
+				demons.add(demon[2]);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		System.out.println("Liste des démons initialisée");
-		
-		// On initialise la liste des machines
-		fichiers = new HashMap<String, Fichier>();
-	}
+		}
 	
 	
 	/*****************************************
 	MAIN
 	*****************************************/
-	public static RMInterface lancerRM(String[] args) throws RemoteException {
-		if(args.length != 1){
-			System.out.println("Usage : java RessourceManager <file>");
-			return null;
-		}
-		//Récupérer les serveurs et les numéros de port depuis le fichier spécifié
-		RMInterface ResMan = new RessourceManager(args[0]);
+	public static RMInterface lancerRM(NameNode nn, String fichierSetUp) throws RemoteException {
+
+
+		RMInterface ResMan = new RessourceManager(nn, fichierSetUp);
 
 		// Se connecter à l'annuaire
 		try {
@@ -103,16 +94,16 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		
 		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
 		while (true) {
-			for (Daemon d : ResMan.getDemons()) {
-				ResMan.getDemonsFonctionnent().put(((DaemonImpl) d).getName(), false);
+			// TODO le diviser en plusieurs threads
+			for (String nomD : ResMan.getDemons()) {
+				ResMan.getDemonsFonctionnent().put((nomD), false);
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				if (ResMan.getDemonsFonctionnent().get(((DaemonImpl) d).getName()) == false) {
-					ResMan.supprimeDemon(((DaemonImpl) d).getName());
+				if (ResMan.getDemonsFonctionnent().get(nomD) == false) {
+					ResMan.supprimeDemon(nomD);
 				}
 			}
 		}
@@ -129,12 +120,9 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	
 	public void supprimeDemon(String nomDemon) {
 		demonsFonctionnent.remove(nomDemon);
-		demons.remove(nomDemon);
 	}
 
-	public List<Daemon> getDemons() {
-		return demons;
-	}
+
 
 	public Map<String, Boolean> getDemonsFonctionnent() {
 		return demonsFonctionnent;
@@ -142,12 +130,32 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 
 
 
-	public void setFichiers(Map<String, Fichier> fichiers) {
-		this.fichiers = fichiers;
+	public void setFichiers(List<String> fragments) {
+		this.fragments = fragments;
 	}
 
-	public void setDemons(List<Daemon> demons) {
+	public void setDemonsDuFragment(Map<String, List<String>> demonsDuFragment) {
+		this.demonsDuFragment = demonsDuFragment;
+	}
+
+	public void setNotreNameNode(NameNode notreNameNode) {
+		this.notreNameNode = notreNameNode;
+	}
+
+	public void setDemons(Collection<String> demons) {
 		this.demons = demons;
+	}
+
+	public Map<String, List<String>> getDemonsDuFragment() {
+		return demonsDuFragment;
+	}
+
+	public NameNode getNotreNameNode() {
+		return notreNameNode;
+	}
+
+	public Collection<String> getDemons() {
+		return demons;
 	}
 
 	public void setDemonsFonctionnent(Map<String, Boolean> demonsFonctionnent) {
@@ -157,8 +165,53 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 
 
 
-	public Map<String, Fichier> getFichiers() {
-		return fichiers;
+	public List<String> getFragments() {
+		return fragments;
 	}
 	//méthode donnant un Demon contenant un fragment de fichier
+
+	public void ajouterFichier(String Fname) {
+		List<Machine> machines;
+		List<String> fragments;
+
+		try {
+			machines = notreNameNode.getMachinesFichier(Fname);
+			for (Machine m : machines) {
+				// mise à jour de demons
+				demons.add(m.getNomDaemon());
+				fragments = notreNameNode.getAllFragmentFichierMachine(m, Fname);
+				for (String frag : fragments) {
+					// mise à jour de fragments
+					fragments.add(frag);
+					// mise à jour de demonsDuFragment
+					if (demonsDuFragment.containsKey(frag)) {
+						demonsDuFragment.get(frag).add(m.getNomDaemon());
+					}else{
+						List listD =  new ArrayList<Daemon>();
+						listD.add(m.getNomDaemon());
+						demonsDuFragment.put(frag,listD);
+					}
+				}
+
+
+			}
+
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Renvoie une liste de démons qui fonctionnent correspondant chacun à un fragment du fichier de nom Fname
+	public ArrayList<String> RecupererNomDemons(String Fname) {
+		ArrayList<String> res = new ArrayList<String>();
+		for (String frag : fragments) {
+			if (frag.startsWith(Fname)) {
+				res.add((demonsDuFragment.get(frag)).get(0));
+			}
+		}
+		return res;
+	}
+
+
 }
+

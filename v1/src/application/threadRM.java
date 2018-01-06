@@ -1,19 +1,20 @@
 package application;
+import hdfs.NameNode;
 import ordo.RMInterface;
 import ordo.RessourceManager;
 
 import java.rmi.RemoteException;
 
 public class threadRM extends Thread{
-    private RMInterface monRM;
+    private  RMInterface monRM;
 
-    public threadRM(RMInterface resMan) {
+    public threadRM(RMInterface ResMan) {
         super();
-        this.monRM = resMan;
+        this.monRM = ResMan;
     }
-    static public void  run (RMInterface resMan) {
+    public void  run() {
         try {
-            RessourceManager.main(resMan);
+            RessourceManager.main(monRM);
         } catch (RemoteException e) {
             e.printStackTrace();
         }

@@ -59,11 +59,7 @@ public class Job implements JobInterface {
 	public Job(Format.Type inputFormat, String inputFName) {
 		this();
 		this.inputFormat = inputFormat;
-		this.inputFName = inputFName;
-
-		this.outputFName = inputFName + "-final";
-		this.interFName = inputFName + "-inter";
-		this.resReduceFName = inputFName + "-res";
+		this.setInputFname(inputFName);
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
 	}
@@ -95,7 +91,7 @@ public class Job implements JobInterface {
 
 		
 		
-		
+		// TODO Récupérer les daemons sur le nameNode
     	// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
@@ -126,6 +122,7 @@ public class Job implements JobInterface {
 		System.out.println("Lancement des Maps ...");
 
 		// enregistrement sur le nameNode du fichier intermédiaire
+		// TODO ON ne parle plus au nameNode, c'est le Ressource MAnager qui s'en occupe
 		NameNode nn = null;
 		try {
 			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
