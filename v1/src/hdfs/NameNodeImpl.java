@@ -92,7 +92,7 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 
 	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) throws RemoteException {
 		List<Machine> mFrag = new ArrayList<>();
-		
+
 		// Récupérer la liste des machines contenant ce fragment
 		// Seulement si elles ne sont pas dans la liste des machinesInutilisables
 		for(Machine m : machines) {
