@@ -48,27 +48,37 @@ public class HdfsClient {
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			e.printStackTrace();
 		}
-    	
-		Message m = new Message(); // Pour envoyer des messages
-		System.out.println("Demande de suppression du fichier : " + hdfsFname + "..." );
+		// Si le fichier existe
+		try {
+			if(nn.fileExists(hdfsFname)) {
+                Message m = new Message(); // Pour envoyer des messages
+                System.out.println("Demande de suppression du fichier : " + hdfsFname + "...");
 
-		// Pour chaque serveur, on va supprimer les fragments qu'il contient
-		for (Machine mac  : machinesSupprimer) {
-			ArrayList<String> fragments = null;
-			
-			try {
-				fragments = (ArrayList<String>) nn.getAllFragmentFichierMachine(mac, hdfsFname);
-			} catch (RemoteException e) {
-				e.printStackTrace();
-			}
-			for (String frag : fragments){
-				m.openClient(mac.getNom(), mac.getPort());
-				m.send(Commande.CMD_DELETE);
-				m.send(frag);
-				m.close();
-			}
+                // Pour chaque serveur, on va supprimer les fragments qu'il contient
+                for (Machine mac : machinesSupprimer) {
+                    ArrayList<String> fragments = null;
+
+                    try {
+                        fragments = (ArrayList<String>) nn.getAllFragmentFichierMachine(mac, hdfsFname);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                    for (String frag : fragments) {
+                        m.openClient(mac.getNom(), mac.getPort());
+                        m.send(Commande.CMD_DELETE);
+                        m.send(frag);
+                        m.close();
+                    }
+                }
+
+            // Si le fichier n'existe pas
+            } else {
+                System.out.println("Le fichier " + hdfsFname + " n'existe pas dans la base de données HDFS !");
+            }
+		} catch (RemoteException e) {
+			e.printStackTrace();
 		}
-		
+
 		// On indique au NameNode qu'on a supprimé le fichier
 		try {
 			nn.supprimeFichierHdfs(hdfsFname);
@@ -245,28 +255,35 @@ public class HdfsClient {
 		
 		try {
 			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
-			FileWriter fw = new FileWriter(file, true);
-			//On récupère la liste des fragments fichier, dans l'ordre
-			ArrayList<String> fragments = (ArrayList<String>) nn.getFragments(hdfsFname);
-			
-			//TODO : gerer le fait qu'une machine peut etre K.O
-			
-			for(String frag : fragments){
-				//une machine qui contient frag
-				Machine mac = nn.getMachineFragment(frag, null);
-				m.openClient(mac.getNom(), mac.getPort());
-				m.send(Commande.CMD_READ);
-				m.send(frag);
-				String strReceived = (String) m.receive();
-				m.close();
-				System.out.println("envoyée au serveur " + mac.getNom() + ":" + mac.getPort());
-				fw.write(strReceived, 0, strReceived.length());		
-			}
 
-			// On ferme notre fichier 
-			System.out.print("Ecriture des données dans un fichier local ...");
-			fw.close();
-			System.out.println("Données écrites.");
+			//Lire seulement si le fichier existe
+			if (nn.fileExists(hdfsFname)) {
+                FileWriter fw = new FileWriter(file, true);
+                //On récupère la liste des fragments fichier, dans l'ordre
+                ArrayList<String> fragments = (ArrayList<String>) nn.getFragments(hdfsFname);
+
+
+				//TODO : gerer le fait qu'une machine peut etre K.O
+
+				for (String frag : fragments) {
+					//une machine qui contient frag
+					Machine mac = nn.getMachineFragment(frag, null);
+					m.openClient(mac.getNom(), mac.getPort());
+					m.send(Commande.CMD_READ);
+					m.send(frag);
+					String strReceived = (String) m.receive();
+					m.close();
+					System.out.println("envoyée au serveur " + mac.getNom() + ":" + mac.getPort());
+					fw.write(strReceived, 0, strReceived.length());
+				}
+
+				fw.close();
+				System.out.print("Ecriture des données dans un fichier local ...");
+				System.out.println("Données écrites.");
+			} else {
+				System.out.println("Le fichier " + hdfsFname + " n'existe pas dans la base de données HDFS");
+			}
+			// On ferme notre fichier
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
