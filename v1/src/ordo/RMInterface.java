@@ -2,6 +2,7 @@ package ordo;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -13,4 +14,9 @@ public interface RMInterface  extends Remote {
     public Map<String, Boolean> getDemonsFonctionnent() throws RemoteException;
 
     public Collection<String> getDemons () throws RemoteException;
+
+    public ArrayList<String> RecupererNomDemons(String Fname) throws RemoteException;
+
+    public String RecupererDemonFragment(String Fname) throws RemoteException;
+
     }

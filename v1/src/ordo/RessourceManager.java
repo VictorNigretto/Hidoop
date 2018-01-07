@@ -212,6 +212,17 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		return res;
 	}
 
+	public String RecupererDemonFragment(String Fname) {
+		String res = null;
+		for (String frag : fragments) {
+			if (frag.equals(Fname)) {
+				res = (demonsDuFragment.get(frag)).get(0);
+			}
+		}
+		return res;
+
+	}
+
 
 }
 

@@ -48,8 +48,8 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.initMachines();
-		this.numberOfMaps = machines.size();
+		//Initialisation des machines
+		this.numberOfMaps = 0;
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
 	}
@@ -57,7 +57,7 @@ public class Job implements JobInterface {
 	// On peut aussi ajouter directement l'input
 	// L'output étant à remplir par l'utilisateur
 	public Job(Format.Type inputFormat, String inputFName) {
-		this();
+		this.machines = new ArrayList<String>();
 		this.inputFormat = inputFormat;
 		this.setInputFname(inputFName);
 		this.outputFormat = inputFormat;
@@ -91,8 +91,21 @@ public class Job implements JobInterface {
 
 		
 		
-		// TODO Récupérer les daemons sur le nameNode
-    	// récupérer la liste des démons sur l'annuaire
+		// On récupere les noms des démons à patrir du ressourceManager
+		RMInterface ResMan = null;
+		try {
+			ResMan = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+			machines = ResMan.RecupererNomDemons(inputFName);
+			numberOfMaps = machines.size();
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
@@ -122,7 +135,6 @@ public class Job implements JobInterface {
 		System.out.println("Lancement des Maps ...");
 
 		// enregistrement sur le nameNode du fichier intermédiaire
-		// TODO ON ne parle plus au nameNode, c'est le Ressource MAnager qui s'en occupe
 		NameNode nn = null;
 		try {
 			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
@@ -264,10 +276,5 @@ public class Job implements JobInterface {
     	return this.getSortComparator();
     }
 
-    public void initMachines(){
-    	this.machines = new ArrayList<String>();
-    		machines.add("Succube");
-    		machines.add("Lucifer");
-    		machines.add("Cthun");
-	}
+
 }
