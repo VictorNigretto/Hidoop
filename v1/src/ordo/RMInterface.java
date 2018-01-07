@@ -19,4 +19,6 @@ public interface RMInterface  extends Remote {
 
     public String RecupererDemonFragment(String Fname) throws RemoteException;
 
+    public void ajouterFichier(String Fname) throws RemoteException;
+
     }

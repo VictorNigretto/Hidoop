@@ -95,7 +95,9 @@ public class Job implements JobInterface {
 		RMInterface ResMan = null;
 		try {
 			ResMan = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+			ResMan.ajouterFichier(inputFName);
 			machines = ResMan.RecupererNomDemons(inputFName);
+			System.out.println(machines);
 			numberOfMaps = machines.size();
 		} catch (NotBoundException e) {
 			e.printStackTrace();

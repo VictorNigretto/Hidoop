@@ -176,6 +176,8 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 
 		try {
 			machines = notreNameNode.getMachinesFichier(Fname);
+			System.out.println(machines);
+			System.out.println(Fname);
 			for (Machine m : machines) {
 				// mise à jour de demons
 				demons.add(m.getNomDaemon());
@@ -195,6 +197,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 
 
 			}
+			System.out.println(demonsDuFragment);
 
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -222,6 +225,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		return res;
 
 	}
+
 
 
 }
