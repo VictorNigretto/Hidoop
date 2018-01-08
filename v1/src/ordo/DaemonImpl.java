@@ -25,7 +25,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 
 	
-	public DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
+	public DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {	
 		super();
 		this.name = nomDaemon;
 		this.machine = new Machine(name, port, nomDaemon);
@@ -94,11 +94,13 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
             RMlance.acquire();
+            /*
             RMInterface rm = ((RMInterface) Naming.lookup("//localhost:1199/RessourceManager"));
             
             while (true) {
             	rm.DemonFonctionne(name);
             }
+            */
 			
 		} catch (Exception e) {
 			e.printStackTrace();

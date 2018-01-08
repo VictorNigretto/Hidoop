@@ -67,6 +67,9 @@ public interface NameNode extends Remote {
 
 	/** Indique le facteur de replication des fragments */
 	public int getFacteurdereplication() throws RemoteException;
+
+	/** Indique si un fichier existe */
+	public boolean fileExists(String fileName) throws RemoteException;
 }
 
 

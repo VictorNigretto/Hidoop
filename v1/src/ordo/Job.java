@@ -160,7 +160,6 @@ public class Job implements JobInterface {
 	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-
 			// on appelle le map sur le démon
 			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
