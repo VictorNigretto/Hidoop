@@ -185,7 +185,13 @@ public class Job implements JobInterface {
 		}
     	System.out.println("OK\n");
 
-    	
+		//Suppression du fichier du ressourceManager
+		try {
+			ResMan.enleverFichier(inputFName);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
 		HdfsRead(inter.getFname(), resReduce.getFname());

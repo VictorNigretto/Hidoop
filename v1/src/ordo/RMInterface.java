@@ -21,4 +21,6 @@ public interface RMInterface  extends Remote {
 
     public void ajouterFichier(String Fname) throws RemoteException;
 
+    public void enleverFichier(String Fname) throws RemoteException;
+
     }

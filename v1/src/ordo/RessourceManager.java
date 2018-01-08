@@ -26,6 +26,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	private Map<String,Boolean> demonsFonctionnent;
 	private NameNode notreNameNode;
 	private Collection<String> demons;
+	private Map<String, Integer> quantiteJob; // le clef est le nom du démon et la valeur est le nombre de jobs utilisant ce démon
 
 	/*****************************************
 	CONSTRUCTEUR
@@ -113,7 +114,20 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	/*****************************************
 	METHODES
 	*****************************************/
-	
+
+	public void setFragments(List<String> fragments) {
+		this.fragments = fragments;
+	}
+
+	public Map<String, Integer> getQuantiteJob() {
+		return quantiteJob;
+	}
+
+	public void setQuantiteJob(Map<String, Integer> quantiteJob) {
+		this.quantiteJob = quantiteJob;
+	}
+
+
 	public void DemonFonctionne(String nomDemon) {
 		demonsFonctionnent.put(nomDemon, true);
 	}
@@ -206,10 +220,24 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 
 	// Renvoie une liste de démons qui fonctionnent correspondant chacun à un fragment du fichier de nom Fname
 	public ArrayList<String> RecupererNomDemons(String Fname) {
+		int min;
+		int i;
+		int i_min;
 		ArrayList<String> res = new ArrayList<String>();
 		for (String frag : fragments) {
 			if (frag.startsWith(Fname)) {
-				res.add((demonsDuFragment.get(frag)).get(0));
+				min =0;
+				i = 0;
+				i_min = 0;
+				for (String demon : demonsDuFragment.get(frag)) {
+					if (quantiteJob.get(demon) <= min) {
+						min = quantiteJob.get(demon);
+						i_min = i;
+					}
+					i++;
+				}
+				res.add((demonsDuFragment.get(frag)).get(i_min));
+				quantiteJob.put(demonsDuFragment.get(frag).get(i_min), min + 1);
 			}
 		}
 		return res;
@@ -224,6 +252,17 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		}
 		return res;
 
+	}
+
+	public void enleverFichier(String Fname) {
+		for (String f : fragments){
+			if (f.startsWith(Fname)) {
+				for (String demon : demonsDuFragment.get(f)) {
+					quantiteJob.put(demon, quantiteJob.get(demon) - 1);
+				}
+			}
+			fragments.remove(f);
+		}
 	}
 
 
