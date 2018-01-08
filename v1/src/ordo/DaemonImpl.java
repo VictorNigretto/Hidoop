@@ -22,6 +22,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
 	private Machine machine;
 	public static Semaphore RMlance = new Semaphore(0);
+	private static Semaphore mutex = new Semaphore(1);
 
 
 	
@@ -30,6 +31,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.name = nomDaemon;
 		this.machine = new Machine(name, port, nomDaemon);
 		System.out.println("Création du Deamon " + this.name);
+		mutex.release();
 		
         //try {
         	//TODO il faut le garder mais probleme de compatibilité avec le namenode ( pour lui, tous les noms de machine sont des localhost)
@@ -84,7 +86,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	// Le premier paramètre sera le nom du démon
 	public static void main(String args[]) {
 		try {
-			
+			mutex.acquire();
 			Daemon d = new DaemonImpl(args[0], Integer.parseInt(args[1]), args[2]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
