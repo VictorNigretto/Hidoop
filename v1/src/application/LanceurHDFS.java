@@ -59,7 +59,10 @@ public class LanceurHDFS {
            
 
     	}
+    
+    TerminalHDFS.main(args);
     }
+
 
 }
 

@@ -1,24 +1,19 @@
 package application;
-import hdfs.NameNode;
-import ordo.RMInterface;
 import ordo.RessourceManager;
 
-import java.rmi.RemoteException;
 
 public class threadRM extends Thread{
-    private  RMInterface monRM;
+    private  String[] commande;
 
-    public threadRM(RMInterface ResMan) {
+    public threadRM(String[] cmdRm) {
         super();
-        this.monRM = ResMan;
+        this.commande = cmdRm;
     }
     public void  run() {
-        try {
-            RessourceManager.main(monRM);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+    	RessourceManager.main(commande);
     }
+
+    
 
 
 }

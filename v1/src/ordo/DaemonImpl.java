@@ -21,6 +21,8 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	
 	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
 	private Machine machine;
+	public static Semaphore RMlance = new Semaphore(0);
+
 
 	
 	public DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
@@ -44,6 +46,15 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 	public void setMachine(Machine machine) {
 		this.machine = machine;
+
+	}
+
+	public Semaphore getRMlance() {
+		return RMlance;
+	}
+
+	public void setRMlance(Semaphore rMlance) {
+		RMlance = rMlance;
 	}
 
 	@Override
@@ -82,7 +93,9 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
+            RMlance.acquire();
             RMInterface rm = ((RMInterface) Naming.lookup("//localhost:1199/RessourceManager"));
+            
             while (true) {
             	rm.DemonFonctionne(name);
             }
