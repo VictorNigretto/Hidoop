@@ -8,5 +8,5 @@ public interface CallBack extends Remote, Serializable {
 	public void confirmFinishedMap() throws InterruptedException, RemoteException;
 
 	// Permet de savoir si nb maps sont terminés
-    public int waitFinishedMap(int nb) throws InterruptedException, RemoteException;
+    public void waitFinishedMap(int nb) throws InterruptedException, RemoteException;
 }

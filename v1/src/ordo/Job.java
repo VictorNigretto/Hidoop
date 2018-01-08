@@ -12,7 +12,6 @@ import java.rmi.RemoteException;
 import formats.*;
 import hdfs.Machine;
 import hdfs.NameNode;
-import hdfs.NameNodeImpl;
 import map.MapReduce;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
@@ -20,10 +19,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import config.SetUp;
-
 import static hdfs.HdfsClient.HdfsRead;
-
+import hdfs.NameNode;
 
 public class Job implements JobInterface {
 	
@@ -41,8 +38,8 @@ public class Job implements JobInterface {
 	private SortComparator sortComparator;
 	private Format.Type interFormat;
 	private String interFName;
-	private List<Machine> machines; //la liste des machines sur lesquelles tournent les démons
-	private List<String> nomsDaemons;
+	private List<String> machines; //la liste des machines sur lesquelles tournent les démons
+
 
 	/*****************************************
 	Constructeurs
@@ -51,8 +48,8 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.initMachinesDaemons();
-		this.numberOfMaps = machines.size();
+		//Initialisation des machines
+		this.numberOfMaps = 0;
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
 	}
@@ -60,13 +57,9 @@ public class Job implements JobInterface {
 	// On peut aussi ajouter directement l'input
 	// L'output étant à remplir par l'utilisateur
 	public Job(Format.Type inputFormat, String inputFName) {
-		this();
+		this.machines = new ArrayList<String>();
 		this.inputFormat = inputFormat;
-		this.inputFName = inputFName;
-
-		this.outputFName = inputFName + "-final";
-		this.interFName = inputFName + "-inter";
-		this.resReduceFName = inputFName + "-res";
+		this.setInputFname(inputFName);
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
 	}
@@ -80,7 +73,7 @@ public class Job implements JobInterface {
         // 1) lancer les maps sur tous les chunks du fichier
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
-    	boolean mapsfinis = false;
+
     	
     	System.out.println("Lancement du job ...");
     	
@@ -98,68 +91,107 @@ public class Job implements JobInterface {
 
 		
 		
-		
-    	// récupérer la liste des démons sur l'annuaire
+		// On récupere les noms des démons à patrir du ressourceManager
+		RMInterface ResMan = null;
+		try {
+			ResMan = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+			ResMan.ajouterFichier(inputFName);
+			machines = ResMan.RecupererNomDemons(inputFName);
+			System.out.println(machines);
+			numberOfMaps = machines.size();
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		// récupérer la liste des démons sur l'annuaire
+		System.out.println("Récupération de la liste des Daemons ...");
     	List<Daemon> demons = new ArrayList<>();
     	for(int i = 0; i < this.numberOfMaps; i++) {
     		try {
     		    // On va récupérer les Démons en RMI sur un annuaire
 				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + machines.get(i) + "/" + nomsDaemons.get(i));
-				demons.add((Daemon) Naming.lookup(machines.get(i).getNom() +"/"+ nomsDaemons.get(i)));
+    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
+				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
 				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
     	}
     	System.out.println("OK\n");
+
     	
-    	do {
-    		// On initialise le callback pour que les démons puissent renvoyer leurs résultats
-    		CallBack cb = null;
-    		try {
-    			cb = new CallBackImpl();
-    		} catch (RemoteException e) {
-    			e.printStackTrace();
-    		}
+    	// On initialise le callback pour que les démons puissent renvoyer leurs résultats
+		CallBack cb = null;
+		try {
+			cb = new CallBackImpl();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 
 		
-    		// Puis on va lancer les maps sur les différents démons
-    		System.out.println("Lancement des Maps ...");
-    		for(int i = 0; i < demons.size(); i++) {
-    			Daemon d = demons.get(i);
+		// Puis on va lancer les maps sur les différents démons
+		System.out.println("Lancement des Maps ...");
+
+		// enregistrement sur le nameNode du fichier intermédiaire
+		NameNode nn = null;
+		try {
+			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
+			nn.ajoutFichierHdfs(inter.getFname());
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		for(int i = 0; i < this.numberOfMaps; i++) {
+			Daemon d = demons.get(i);
 			
-    			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
-    			Format inputTmp;
-		        if(inputFormat == Format.Type.LINE) { // LINE
-		        	inputTmp = new FormatLine(input.getFname() + "" + i);
-				} else { // KV
-		        	inputTmp = new FormatKV(input.getFname() + "" + i);
-				}
-		        Format interTmp = new FormatKV(inter.getFname() + "" + i);
-	
-				// on appelle le map sur le démon
-				MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
-				mapRunner.start();
+			// On change le nom des Formats en rajoutant un numéro pour que les fragments aient des noms différents pour chaque Daemon
+			Format inputTmp;
+	        if(inputFormat == Format.Type.LINE) { // LINE
+	        	inputTmp = new FormatLine(input.getFname() + "" + i);
+			} else { // KV
+	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
-	    	System.out.println("OK\n");
-	
-	    	
-			// Puis on attends que tous les démons aient finis leur travail
-	    	System.out.println("Attente de la confirmation des Daemons ...");
+	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
+
+			// on appelle le map sur le démon
+			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
+			mapRunner.start();
+
+			//On prévient le NameNode qu'on a ajouté un fragment à la machine
 			try {
-				int retour = cb.waitFinishedMap(numberOfMaps);
-				if (retour == 0) {
-					mapsfinis = false;
-					
-				}
-			} catch (Exception e) {
+
+				nn.ajoutFragmentMachine(((Daemon) d).getMachine(), inter.getFname(), inter.getFname() +"" + i, i);
+			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
-    	}while (!mapsfinis);
+		}
     	System.out.println("OK\n");
 
     	
+		// Puis on attends que tous les démons aient finis leur travail
+    	System.out.println("Attente de la confirmation des Daemons ...");
+		try {
+			cb.waitFinishedMap(numberOfMaps);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	System.out.println("OK\n");
+
+		//Suppression du fichier du ressourceManager
+		try {
+			ResMan.enleverFichier(inputFName);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
 		HdfsRead(inter.getFname(), resReduce.getFname());
@@ -252,16 +284,5 @@ public class Job implements JobInterface {
     	return this.getSortComparator();
     }
 
-    public void initMachinesDaemons(){
-		NameNode nn;
-		try {
-			nn = ((NameNode) Naming.lookup("/localhost:1090/" + " NameNode" ));/* On considère que le nameNode est sur le même ordi que le job*/
-			machines = nn.getMachines();
-			nomsDaemons = nn.getDaemons();
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
 
-	} 
 }

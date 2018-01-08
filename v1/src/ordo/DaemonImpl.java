@@ -8,29 +8,53 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.Semaphore;
+
 import formats.Format;
 import hdfs.Machine;
+import hdfs.NameNode;
 import map.Mapper;
 
 public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 
 	private static final long serialVersionUID = 1L;
 	
-	private String name; // Les démons ont un nom pour qu'on puisse les différencier
-	private String nomMachine;
-	
-	
-	protected DaemonImpl(String name) throws RemoteException {
-		super();
-		this.name = name;
-		System.out.println("Création du Deamon " + this.name);
-        try {
-			nomMachine = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
+	private Machine machine;
+	public static Semaphore RMlance = new Semaphore(0);
 
+
+	
+	public DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
+		super();
+		this.name = nomDaemon;
+		this.machine = new Machine(name, port, nomDaemon);
+		System.out.println("Création du Deamon " + this.name);
+		
+        //try {
+        	//TODO il faut le garder mais probleme de compatibilité avec le namenode ( pour lui, tous les noms de machine sont des localhost)
+			//machine.setNom(InetAddress.getLocalHost().getHostName());
+		//} catch (UnknownHostException e) {
+		//	e.printStackTrace();
+		//}
+
+	}
+
+	public Machine getMachine() {
+		return machine;
+	}
+
+	public void setMachine(Machine machine) {
+		this.machine = machine;
+
+	}
+
+	public Semaphore getRMlance() {
+		return RMlance;
+	}
+
+	public void setRMlance(Semaphore rMlance) {
+		RMlance = rMlance;
 	}
 
 	@Override
@@ -60,7 +84,8 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	// Le premier paramètre sera le nom du démon
 	public static void main(String args[]) {
 		try {
-			Daemon d = new DaemonImpl(args[0]);
+			
+			Daemon d = new DaemonImpl(args[0], Integer.parseInt(args[1]), args[2]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
             //Registry registry = LocateRegistry.createRegistry(1099);
@@ -68,6 +93,12 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("//localhost:1199/" + ((DaemonImpl) d).getName());
             Naming.rebind("//localhost:1199/" + ((DaemonImpl) d).getName(), d);
             System.out.println("Done !");
+            RMlance.acquire();
+            RMInterface rm = ((RMInterface) Naming.lookup("//localhost:1199/RessourceManager"));
+            
+            while (true) {
+            	rm.DemonFonctionne(name);
+            }
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -82,18 +113,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.name = name;
 	}
 
-	public String getNomMachine() {
-		return nomMachine;
-	}
 
-	public void setNomMachine(String nomMachine) {
-		this.nomMachine = nomMachine;
-	}
 
-	@Override
-	public Machine getMachine() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 }

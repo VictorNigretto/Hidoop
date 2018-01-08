@@ -92,11 +92,11 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 
 	public Machine getMachineFragment(String nomFragment, List<Machine> machineInutilisables) throws RemoteException {
 		List<Machine> mFrag = new ArrayList<>();
-		
+
 		// Récupérer la liste des machines contenant ce fragment
 		// Seulement si elles ne sont pas dans la liste des machinesInutilisables
 		for(Machine m : machines) {
-			if(m.containsFragment(nomFragment) && !machineInutilisables.contains(m)) {
+			if(m.containsFragment(nomFragment) && ((machineInutilisables == null) || !machineInutilisables.contains(m))) {
 				mFrag.add(m);
 			}
 		}		
@@ -113,10 +113,21 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 				mRes = m;
 			}
 		}
-		
+
 		// Renvoyer le résultat
 		return mRes;
 	}
+	
+	public Machine getMachineMoinsPleine() throws RemoteException{
+		Machine meilleureMachine = machines.get(0);
+		for (Machine m : machines){
+			if(m.getFragments().size() < meilleureMachine.getFragments().size()){
+				meilleureMachine = m;
+			}
+		}
+		return meilleureMachine;
+	}
+
 
 	public List<Machine> getAllMachinesFragment(String nomFragment) throws RemoteException{
 		List<Machine> mFrag = new ArrayList<>();
@@ -175,30 +186,37 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 		return list;
 	}
 	
-	public void ajoutFichierHdfs(String nomFichier) {
-		fichiers.put(nomFichier, new Fichier(nomFichier));
+	public void ajoutFichierHdfs(String nomFichier) throws RemoteException {
+		Fichier f = new Fichier(nomFichier);
+		f.setNbFragments(0);
+		fichiers.put(nomFichier, f);
+
 	}
 	
-	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment) {
+	public void ajoutFragmentMachine(Machine machine, String nomFichier, String nomFragment, int numeroFragment) throws RemoteException {
 		for(Machine m : machines) {
-			if(machine.getNom().equals(m.getNom())) {
+
+			if(machine.getNom().equals(m.getNom())
+			&& machine.getPort() == m.getPort()
+			&& machine.getNomDaemon().equals(m.getNomDaemon())) {
 				m.getFragments().add(nomFragment);
 			}
 		}
 		Fichier f = fichiers.get(nomFichier);
-		f.setNbFragments(f.getNbFragments() + 1);
+		f.setNbFragments(Math.max(numeroFragment + 1, f.getNbFragments()));
 	}
 	
-	public void supprimeFichierHdfs(String nomFichier) {
+	public void supprimeFichierHdfs(String nomFichier) throws RemoteException {
 		for(Machine m : machines) {
-			for(String fragment : m.getFragments()) {
+			for(int i = 0; i < m.getFragments().size(); i++) {
+				String fragment = m.getFragments().get(i);
 				if (fragment.startsWith(nomFichier)){
 					m.getFragments().remove(fragment);
 				}
 			}
 		}
 		fichiers.remove(nomFichier);
-	}
+}
 
 	/*****************************************
 	GETS && SETS
@@ -207,7 +225,7 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 		return machines;
 	}
 
-	public static int getFacteurdereplication() {
+	public int getFacteurdereplication() {
 		return facteurDeReplication;
 	}
 }

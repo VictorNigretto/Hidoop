@@ -11,6 +11,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import formats.Format;
@@ -38,13 +39,12 @@ public class HdfsClient {
     public static void HdfsDelete(String hdfsFname) {
     	//Recuperer la liste des machines auxquelles on va envoyer la demande de suppression
     	//On interroge le NameNode
-    	NameNodeImpl nn = null;
+    	NameNode nn = null;
     	ArrayList<Machine> machinesSupprimer = null;
 
 		try {
-			nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
+			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
 			machinesSupprimer = (ArrayList<Machine>) nn.getMachinesFichier(hdfsFname);
-
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
 			e.printStackTrace();
 		}
@@ -61,18 +61,20 @@ public class HdfsClient {
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
-			m.openClient(mac.getNom(), mac.getPort());
 			for (String frag : fragments){
+				m.openClient(mac.getNom(), mac.getPort());
 				m.send(Commande.CMD_DELETE);
 				m.send(frag);
+				m.close();
 			}
-			m.close();
-			//Si bug, remettre les close t openclient dans la boucle for
-			System.out.println("envoyee au serveur " + mac.getNom() + ":" + mac.getPort());
 		}
 		
 		// On indique au NameNode qu'on a supprimé le fichier
-		nn.supprimeFichierHdfs(hdfsFname);
+		try {
+			nn.supprimeFichierHdfs(hdfsFname);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 	}
 	
     /* Pour écrire un fichier local sur le serveur HDFS
@@ -87,16 +89,28 @@ public class HdfsClient {
 		File fichier = new File(localFSSourceFname); // le fichier que l'on lit
 
         //Recupération des machines disponibles en écriture
-        NameNodeImpl nn = null;
+        NameNode nn = null;
         try {
-            nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
+            nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
         } catch (MalformedURLException | RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
 
-        ArrayList<Machine> machines = (ArrayList<Machine>) nn.getMachines();
+        List<Machine> machines = null;
+		try {
+			machines = nn.getMachines();
+		} catch (RemoteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
         int nbServeurs = machines.size();
-        int factReplication = nn.getFacteurdereplication();
+        int factReplication = 0;
+		try {
+			factReplication = nn.getFacteurdereplication();
+		} catch (RemoteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
     	try {
 			//On a donc un format line ou un format KV, dans les deux cas le fichier est écrits sous forme de fichier text 
@@ -110,25 +124,27 @@ public class HdfsClient {
                 /*Debut du nouveau code*/
 				//Lire la taille du fichier
                 long tailleF = fichier.length();
-                int numFragment = 1;
+                int numFragment = 0;
 
-                //Selectionner la premiere machine qui recoit un fragment au hasard.
-                int randomNum = ThreadLocalRandom.current().nextInt(0, machines.size()+1);
-                Machine firstMachine = machines.get(randomNum);
+                //Selectionner la premiere machine qui recoit un fragment au hasard.                
+                Machine firstMachine = nn.getMachineMoinsPleine();
                 
                 //Dire au NameNode qu'on va ajouter un fichier à la base de données
                 nn.ajoutFichierHdfs(localFSSourceFname);
+                
+                // On calcul le nombre de fragments que l'on va envoyer !
+                int nbFragments = nbServeurs;
 
 				//On envoie des fragments de fichiers aux serveurs
-                while(br.readLine()!=null) {
+                for(int k = 0; k < nbFragments; k++) {
 
                     long tailleFrag = 0L;
                     String str = new String();
-                	String ligne;
+                	String ligne = null;
 
                     //On calcule le String à envoyer pour un fragment
-                    while ((tailleF / nbServeurs) > tailleFrag) {
-                    	ligne = br.readLine() + "\n";
+                    while ((tailleF / nbServeurs) > tailleFrag && (ligne = br.readLine()) != null) {
+                    	ligne += "\n";
                         str += ligne;
                         tailleFrag += ligne.getBytes().length;
                     }
@@ -150,7 +166,7 @@ public class HdfsClient {
                         m.close();
                         
                         //Dire au NameNode qu'on a mis le fragment dans firstMachine
-                        nn.ajoutFragmentMachine(firstMachine, localFSSourceFname, nomFragment);
+                        nn.ajoutFragmentMachine(firstMachine, localFSSourceFname, nomFragment, numFragment);
                         
                         //Choisir la machine suivante
                         int indice = machines.indexOf(firstMachine);
@@ -158,9 +174,7 @@ public class HdfsClient {
                             firstMachine = machines.get(0);
                         } else {
                             firstMachine = machines.get(indice + 1);
-                        }
-                        
-                        
+                        }           
                     }
                     numFragment++;
                 }
@@ -225,7 +239,7 @@ public class HdfsClient {
 		NameNode nn = null;
 		
 		try {
-			nn = (NameNodeImpl) Naming.lookup("//localhost:1199/NameNode");
+			nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
 			FileWriter fw = new FileWriter(file, true);
 			//On récupère la liste des fragments fichier, dans l'ordre
 			ArrayList<String> fragments = (ArrayList<String>) nn.getFragments(hdfsFname);
@@ -245,9 +259,9 @@ public class HdfsClient {
 			}
 
 			// On ferme notre fichier 
-			fw.close();
 			System.out.print("Ecriture des données dans un fichier local ...");
-			System.out.println("données écrites");
+			fw.close();
+			System.out.println("Données écrites.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
