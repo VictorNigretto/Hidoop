@@ -113,6 +113,7 @@ public class MyMonteCarlo implements MapReduce{
 		System.out.println(pi);
 		
 		writer.write(new KV("Pi", String.valueOf(pi)));
+		
 	}
 	
 	// Avec un paramètre : le nom du fichier !
