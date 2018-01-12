@@ -21,9 +21,6 @@ import hdfs.NameNode;
 
 public class RessourceManager extends UnicastRemoteObject implements RMInterface {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	/*****************************************
 	ATTRIBUTS
@@ -36,6 +33,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	private Collection<Machine> machines;
 	private Map<String, Integer> quantiteJob; // le clef est le nom du démon et la valeure est le nombre de jobs utilisant ce démon
 	private Map<String, String> nomMachines; // la clef est le nom du démon, la valeure est le nom de la machine associée
+	
 	/*****************************************
 	CONSTRUCTEUR
 	*****************************************/
@@ -71,61 +69,63 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 			e.printStackTrace();
 		}
 		System.out.println("Liste des démons initialisée");
-		}
+	}
 	
 	
 	/*****************************************
 	MAIN
-	 * @throws NotBoundException 
-	 * @throws MalformedURLException 
 	*****************************************/
 
 	public static void main(String[] args) {
-		
 		RMInterface ResMan;
+		
 		try {
+			// On lance le RM
 			ResMan = new RessourceManager(args[0]); // args[0] est le fichier setUp.txt
 				
+			// On se connecte au NameNode
 			Naming.rebind("//localhost:1199/RessourceManager", ResMan);
-		// On se connecte au NameNode
 		
+			// On le lie au NameNode
 			ResMan.setNotreNameNode((NameNode) Naming.lookup("//localhost:1199/NameNode"));
 
+			// On récupère la liste des machines
+			List<Machine> machines = ResMan.getNotreNameNode().getMachines();
 
-		List<Machine> machines =null;
-	
-			machines = ResMan.getNotreNameNode().getMachines();
-
-		for (Machine m : machines){
-			DaemonImpl.RMlance.release();
-        }
+			for (Machine m : machines){
+				DaemonImpl.RMlance.release();
+		    }
 		
-		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
-		while (true) {
-			List<String> rm = new ArrayList<String>();
-			String nomD;
-			// TODO le diviser en plusieurs threads
-			for (Machine m : ResMan.getMachines()) {
-				nomD = m.getNomDaemon();
-				ResMan.getDemonsFonctionnent().put((nomD), false);
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				if (ResMan.getDemonsFonctionnent().get(nomD) == false) {
-					rm.add(nomD);
+			// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
+			while (true) {
+				List<String> rm = new ArrayList<String>();
+				String nomD;
+				// TODO le diviser en plusieurs threads
+				for (Machine m : ResMan.getMachines()) {
+					nomD = m.getNomDaemon();
+					// On met la valeur du démons à false
+					ResMan.getDemonsFonctionnent().put(nomD, false);
+					
+					// On lui laisse un peu de temps pour changer la valeur
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					// Si il ne l'a pas fait, c'est qu'il est mort !!!
+					if (ResMan.getDemonsFonctionnent().get(nomD) == false) {
+						rm.add(nomD);
+					}
 				}
 				
+				// Donc on supprime tous les démons morts du RM !
+				for (String demon : rm){
+					ResMan.supprimeDemon(demon);
+				}
 			}
-			for (String demon : rm){
-				ResMan.supprimeDemon(demon);
-			}
-			
-			}
-		} catch (RemoteException | MalformedURLException | NotBoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (RemoteException | MalformedURLException | NotBoundException e) {
+			e.printStackTrace();
 		}
 	}
 	

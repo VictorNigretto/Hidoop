@@ -100,6 +100,11 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             
             while (true) {
             	rm.DemonFonctionne(name);
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
             }
 			
 		} catch (Exception e) {

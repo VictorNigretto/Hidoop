@@ -24,9 +24,6 @@ public class HidoopLanceur {
 
 
     public static void main (String[] args) {
-        /* On ajoute le RessourceManager à l'annuaire */
-        String[] cmdRm = {"setUp.txt"};
-        RMInterface resMan = null;
 
         // Lancer l'annuaire
         System.out.println("Lancement de l'annuaire ...");
@@ -37,9 +34,6 @@ public class HidoopLanceur {
             e.printStackTrace();
         }
 
-
-
-        /* On lance hdfs ( ce qui lance aussi les daemons*/
         // Lancer le NameNode
         String[] cmdNn = {"setUp.txt"};
         try {
@@ -48,24 +42,17 @@ public class HidoopLanceur {
             System.out.println("Echec du lancement du NameNode");
             e.printStackTrace();
         }
-        // Lancer les serveurs HDFS et les Daemons
+        
+        // Récupérer le NameNode
         NameNode nn = null;
         try {
             nn = (NameNode) Naming.lookup("//localhost:1199/NameNode");
-        } catch (RemoteException e) {
+        } catch (Exception e) {
             System.out.println("Echec du chargement du NameNode");
             e.printStackTrace();
         }
-        // On lance le RessourceManager
- catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NotBoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-        Semaphore mutex = new Semaphore(1);
+        
+        // On lance les Serveurs et les Daemons
         List<Machine> machines;
 		try {
 			machines = nn.getMachines();
@@ -74,21 +61,9 @@ public class HidoopLanceur {
 	            String[] port = {String.valueOf(m.getPort())};
 	            new ServerRunner(port).start();
 	            // Lancer les Daemons (en local)
-	           // try {
-					//mutex.acquire();
-					DaemonRunner dr = new DaemonRunner(m.getNomDaemon(), m.getPort(), m.getNom());           
-		            dr.start();
-		        /*    mutex.release();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}*/
-	            
-	            
-
+				new DaemonRunner(m.getNomDaemon(), m.getPort(), m.getNom()).start();           
 	        }
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -99,8 +74,25 @@ public class HidoopLanceur {
         /* On demande à l'utilisateur s'il veut utiliser hdfs ou hidoop */
         TerminalHDFS.main(args);
     }
-
-
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

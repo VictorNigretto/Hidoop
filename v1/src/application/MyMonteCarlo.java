@@ -11,12 +11,12 @@ import ordo.Job;
 
 public class MyMonteCarlo implements MapReduce{
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	@Override
+	/* Le but de cette fonction est de générer n points 
+	 * dans un carré puis de vérifier si ils sont dans le 
+	 * quart du cercle. */
 	public void map(FormatReader reader, FormatWriter writer) {
 		long nbInternes = 0;
 		long nbExternes = 0;
@@ -30,14 +30,19 @@ public class MyMonteCarlo implements MapReduce{
 		final int[] P = {2,3};
 		final int[] K = {63, 40}; 
 		
-		
 		KV kv;
 		//Pour chaque ligne du fichier
 		while((kv = reader.read()) != null){
 			//Récupérer l'indice de début de la suite et le nombre depoints à générer
-			StringTokenizer st = new StringTokenizer(kv.v, " ");
-			debutSuite = Integer.parseInt(st.nextToken());
-			nbPoints = Integer.parseInt(st.nextToken()) - debutSuite;
+			StringTokenizer st = new StringTokenizer(kv.v);
+			debutSuite = Long.parseLong(st.nextToken());
+			// ATTENTION JE FAIS UNE MODIFICATION ICI, le deuxième paramètre est le nombre de points !
+			//nbPoints = Integer.parseInt(st.nextToken()) - debutSuite;
+			nbPoints = Long.parseLong(st.nextToken());
+			
+			// TODO ! <3
+			// TOUT LE CODE ICI EST À REPRENDRE !!!
+			// TODO !
 			
 			//Générer les points à l'aide de la suite de Halton
 		    xInit = new double[K.length];
@@ -78,42 +83,45 @@ public class MyMonteCarlo implements MapReduce{
 		    		}
 		    	}
 		    	//Vérifier si u point est externe ou interne
-		    	double x = point [0] - 0.5;
-		    	double y = point[1] - 0.5;
-		    	if( x*x + y*y > 0.25) {
-		    		nbExternes++;
-		    	} else {
+		    	//double x = point [0] - 0.5;
+		    	//double y = point[1] - 0.5;
+		    	double x = point[0];
+		    	double y = point[1];
+		    	if(Math.sqrt(x*x + y*y) <= 1) {
 		    		nbInternes++;
+		    	} else {
+		    		nbExternes++;
 		    	}
-
 		    }
 		}
+		
 		//Ecrire les resultats dans le fichier
-		writer.write(new KV("In",String.valueOf(nbInternes)));
-		writer.write(new KV("Out",String.valueOf(nbExternes)));
-
+		System.out.println("IN " + nbInternes + " OUT " + nbExternes);
+		writer.write(new KV("In", String.valueOf(nbInternes)));
+		writer.write(new KV("Out", String.valueOf(nbExternes)));
 	}
 
 	@Override
 	public void reduce(FormatReader reader, FormatWriter writer) {
 		KV kv;
-		long nbExternes = 0L;
-		long nbInternes = 0L;
+		float nbExternes = 0f;
+		float nbInternes = 0f;
 		float pi;
 		while ((kv = reader.read()) != null) {
 			if((kv.k).equals("In")){
-				nbInternes += Integer.parseInt(kv.v);
+				nbInternes += Float.parseFloat(kv.v);
+			} else if (kv.k.equals("Out")) {
+				nbExternes += Float.parseFloat(kv.v);
 			} else {
-				nbExternes += Integer.parseInt(kv.v);
+				System.out.println("On a pas lu la bonne clé du KV !!!");
 			}
 		}
 		
 		//Calculer la décimale de pi
-		pi = 4 * (nbInternes/nbExternes);
-		System.out.println(pi);
-		
+		System.out.println("InFinal " + nbInternes + " OutFinal " + nbExternes);
+		pi = 4f * (nbInternes / (nbInternes + nbExternes));
+		System.out.println("Voici la valeur de PI = " + pi + " ! ");
 		writer.write(new KV("Pi", String.valueOf(pi)));
-		
 	}
 	
 	// Avec un paramètre : le nom du fichier !
