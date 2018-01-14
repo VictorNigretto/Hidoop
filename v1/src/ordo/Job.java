@@ -48,8 +48,8 @@ public class Job implements JobInterface {
 	// Constructeur vide avec les données minimums
 	// Le reste à étant à remplir par l'utilisateur
 	public Job() {
-		this.initMachines();
-		this.numberOfMaps = machines.size();
+		//Initialisation des machines
+		this.numberOfMaps = 0;
 		this.numberOfReduces = 1; //Pour la V0 uniquement
 		this.sortComparator = new SortComparatorLexico(); //TODO
 	}
@@ -57,16 +57,11 @@ public class Job implements JobInterface {
 	// On peut aussi ajouter directement l'input
 	// L'output étant à remplir par l'utilisateur
 	public Job(Format.Type inputFormat, String inputFName) {
-		this();
+		this.machines = new ArrayList<String>();
 		this.inputFormat = inputFormat;
-		this.inputFName = inputFName;
-
-		this.outputFName = inputFName + "-final";
-		this.interFName = inputFName + "-inter";
-		this.resReduceFName = inputFName + "-res";
+		this.setInputFname(inputFName);
 		this.outputFormat = inputFormat;
 		this.interFormat = inputFormat;
-
 	}
 
 	/*****************************************
@@ -79,6 +74,7 @@ public class Job implements JobInterface {
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
+    	
     	System.out.println("Lancement du job ...");
     	
     	
@@ -93,20 +89,27 @@ public class Job implements JobInterface {
 		resReduce = new FormatKV(resReduceFName);
 		output = new FormatKV(outputFName);
 
-    	// récupérer la liste des démons sur l'annuaire
+		
+		
+		// On récupere les noms des démons à patrir du ressourceManager
+		RMInterface ResMan = null;
+		try {
+			ResMan = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+			ResMan.ajouterFichier(inputFName);
+			machines = ResMan.RecupererNomDemons(inputFName);
+			System.out.println(machines);
+			numberOfMaps = machines.size();
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
-    	List<Daemon> demons = new ArrayList<>();
-    	for(int i = 0; i < this.numberOfMaps; i++) {
-    		try {
-    		    // On va récupérer les Démons en RMI sur un annuaire
-				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
-				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
-				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-    	}
+		List<Daemon> demons = initDemons(0);
     	System.out.println("OK\n");
 
     	
@@ -146,6 +149,7 @@ public class Job implements JobInterface {
 	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
+
 			// on appelle le map sur le démon
 			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
@@ -170,7 +174,13 @@ public class Job implements JobInterface {
 		}
     	System.out.println("OK\n");
 
-    	
+		//Suppression du fichier du ressourceManager
+		try {
+			ResMan.enleverFichier(inputFName);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
 		// On utilise HDFS pour récupérer le fichier résultat concaténé dans resReduce
     	System.out.println("Récupération du fichier résultat ...");
 		HdfsRead(inter.getFname(), resReduce.getFname());
@@ -199,6 +209,42 @@ public class Job implements JobInterface {
 	Méthodes auxiliares
 	*****************************************/
 
+
+    public List<Daemon>  initDemons(int debut) {
+    	List<Daemon> demons = new ArrayList<>();
+    	for(int i = debut; i < this.numberOfMaps; i++) {
+    		try {
+    		    // On va récupérer les Démons en RMI sur un annuaire
+				// TODO => généraliser à plusieurs démons sur plusieurs machines
+    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
+				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
+				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
+    		} catch (RemoteException | NotBoundException e) {
+    			// Dans ce cas on essaye de changer de Daemon
+    			System.out.println("Veuillez patienter un moment, nous essayons un autre Daemon");
+    			try {
+    				RMInterface RM = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+    				String nomDemon = RM.RecupererDemonFragment(inputFName);
+    				
+    				if (nomDemon == null) {
+    					System.out.println("Il n'y a plus de démons fonctionnels pouvant effectuer le map sur ce fragment de fichier");
+    				}else {
+    					machines.set(i, nomDemon);  				}
+    					initDemons(i);
+    			} catch (NotBoundException e1) {
+    				e.printStackTrace();
+    			} catch (MalformedURLException e1) {
+    				e1.printStackTrace();
+    			} catch (RemoteException e1) {
+    				System.out.println("Meme le RessourceManager est mort, nous ne pouvons plus rien faire, veuillez nous excuser");
+    			}
+    		} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
+    	return demons;
+    }
+    
     public void setNumberOfReduces(int tasks){
     	this.numberOfReduces = tasks;
     }
@@ -262,10 +308,5 @@ public class Job implements JobInterface {
     	return this.getSortComparator();
     }
 
-    public void initMachines(){
-    	this.machines = new ArrayList<String>();
-    		machines.add("Succube");
-    		machines.add("Lucifer");
-    		machines.add("Cthun");
-	}
+
 }
