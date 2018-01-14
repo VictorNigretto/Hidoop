@@ -23,7 +23,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	private Machine machine;
 
 	
-	protected DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
+	protected DaemonImpl(String nomDaemon, int port, String name) throws RemoteException {
 		super();
 		this.name = nomDaemon;
 		this.machine = new Machine(name, port, nomDaemon);
