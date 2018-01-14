@@ -11,6 +11,66 @@ import ordo.Job;
 
 public class MyMonteCarlo implements MapReduce{
 
+    private static class HaltonSequence {
+        /** Bases */
+        static final int[] P = {2, 3};
+        /** Maximum number of digits allowed */
+        static final int[] K = {63, 40};
+
+        private long index;
+        private double[] x;
+        private double[][] q;
+        private int[][] d;
+
+        /** Initialize to H(startindex),
+         * so the sequence begins with H(startindex+1).
+         */
+        HaltonSequence(long startindex) {
+            index = startindex;
+            x = new double[K.length];
+            q = new double[K.length][];
+            d = new int[K.length][];
+            for(int i = 0; i < K.length; i++) {
+                q[i] = new double[K[i]];
+                d[i] = new int[K[i]];
+            }
+
+            for(int i = 0; i < K.length; i++) {
+                long k = index;
+                x[i] = 0;
+
+                for(int j = 0; j < K[i]; j++) {
+                    q[i][j] = (j == 0? 1.0: q[i][j-1])/P[i];
+                    d[i][j] = (int)(k % P[i]);
+                    k = (k - d[i][j])/P[i];
+                    x[i] += d[i][j] * q[i][j];
+                }
+            }
+        }
+
+        /** Compute next point.
+         * Assume the current point is H(index).
+         * Compute H(index+1).
+         *
+         * @return a 2-dimensional point with coordinates in [0,1)^2
+         */
+        double[] nextPoint() {
+            index++;
+            for(int i = 0; i < K.length; i++) {
+                for(int j = 0; j < K[i]; j++) {
+                    d[i][j]++;
+                    x[i] += q[i][j];
+                    if (d[i][j] < P[i]) {
+                        break;
+                    }
+                    d[i][j] = 0;
+                    x[i] -= (j == 0? 1.0: q[i][j-1]);
+                }
+            }
+            return x;
+        }
+    }
+
 	private static final long serialVersionUID = 1L;
 
 	@Override
@@ -22,76 +82,29 @@ public class MyMonteCarlo implements MapReduce{
 		long nbExternes = 0;
 		long debutSuite;
 		long nbPoints;
-		double[] xInit;
-		double[][] q;
-		int d[][];
-		
+		HaltonSequence hs;
 		double[] point;
-		final int[] P = {2,3};
-		final int[] K = {63, 40}; 
-		
+		double x, y;
 		KV kv;
+
 		//Pour chaque ligne du fichier
 		while((kv = reader.read()) != null){
 			//Récupérer l'indice de début de la suite et le nombre depoints à générer
 			StringTokenizer st = new StringTokenizer(kv.v);
 			debutSuite = Long.parseLong(st.nextToken());
-			// ATTENTION JE FAIS UNE MODIFICATION ICI, le deuxième paramètre est le nombre de points !
-			//nbPoints = Integer.parseInt(st.nextToken()) - debutSuite;
 			nbPoints = Long.parseLong(st.nextToken());
 			
-			// TODO ! <3
-			// TOUT LE CODE ICI EST À REPRENDRE !!!
-			// TODO !
-			
 			//Générer les points à l'aide de la suite de Halton
-		    xInit = new double[K.length];
-		    q = new double[K.length][];
-		    d = new int[K.length][];
-		    
-		    for(int i = 0; i < K.length; i++) {
-		        q[i] = new double[K[i]];
-		        d[i] = new int[K[i]];
-		    }
-
-		    for(int i = 0; i < K.length; i++) {
-		    	long k = debutSuite;
-		        xInit[i] = 0;
-		        
-		        for(int j = 0; j < K[i]; j++) {
-		          q[i][j] = (j == 0? 1.0: q[i][j-1])/P[i];
-		          d[i][j] = (int)(k % P[i]);
-		          k = (k - d[i][j])/P[i];
-		          xInit[i] += d[i][j] * q[i][j];
-		        }
-		    }
-		    nbExternes = 0L;
-		    nbInternes = 0L;
-		    
+            hs = new HaltonSequence(debutSuite);
 		    for(long n = 0; n < nbPoints; n++){
-		    	//Calculer le point suivant
-		    	point = new double[K.length];
-		    	for(int i=0; i<K.length; i++){
-		    		for(int j = 0; j<K[i]; j++){
-		    			d[i][j]++;
-		    			point[i] += q[i][j];
-		    			if(d[i][j] < P[i]){
-		    				break;
-		    			}
-		    			d[i][j] = 0;
-		    			point[i] -= (j == 0? 1.0: q[i][j-1]);
-		    		}
-		    	}
-		    	//Vérifier si u point est externe ou interne
-		    	//double x = point [0] - 0.5;
-		    	//double y = point[1] - 0.5;
-		    	double x = point[0];
-		    	double y = point[1];
-		    	if(Math.sqrt(x*x + y*y) <= 1) {
-		    		nbInternes++;
-		    	} else {
-		    		nbExternes++;
-		    	}
+		        point = hs.nextPoint();
+		        x = point[0] - 0.5;
+                y = point[1] - 0.5;
+                if(x*x + y*y > 0.25) {
+                    nbExternes ++;
+                } else {
+                    nbInternes ++;
+                }
 		    }
 		}
 		
@@ -103,10 +116,10 @@ public class MyMonteCarlo implements MapReduce{
 
 	@Override
 	public void reduce(FormatReader reader, FormatWriter writer) {
-		KV kv;
 		float nbExternes = 0f;
 		float nbInternes = 0f;
 		float pi;
+        KV kv;
 		while ((kv = reader.read()) != null) {
 			if((kv.k).equals("In")){
 				nbInternes += Float.parseFloat(kv.v);
