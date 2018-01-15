@@ -218,7 +218,12 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 			}
 		}
 		fichiers.remove(nomFichier);
-}
+	}
+
+
+	public boolean fileExists(String fileName) throws RemoteException{
+		return (fichiers.get(fileName) != null);
+	}
 
 	/*****************************************
 	GETS && SETS

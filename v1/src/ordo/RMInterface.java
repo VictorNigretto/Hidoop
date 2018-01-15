@@ -29,5 +29,4 @@ public interface RMInterface  extends Remote {
     public void setNotreNameNode(NameNode nn) throws RemoteException;
     
     public NameNode getNotreNameNode() throws RemoteException;
-
-    }
+}
