@@ -21,15 +21,9 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	
 	static private String name; // Les démons ont un nom pour qu'on puisse les différencier
 	private Machine machine;
-<<<<<<< HEAD
 	public static  Semaphore RMlance = new Semaphore(0);
 	public static Semaphore DemonsLances = new Semaphore(0);
 	private static Semaphore protectName = new Semaphore(1);
-=======
-	public static Semaphore RMlance = new Semaphore(0);
-	private static Semaphore mutex = new Semaphore(1);
-
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
 
 	
 	public DaemonImpl(String nomDaemon, int port, String name ) throws RemoteException {
@@ -37,12 +31,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 		this.name = nomDaemon;
 		this.machine = new Machine(name, port, nomDaemon);
 		System.out.println("Création du Deamon " + this.name);
-<<<<<<< HEAD
 		protectName.release();
-=======
-		mutex.release();
-		
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
         //try {
         	//TODO il faut le garder mais probleme de compatibilité avec le namenode ( pour lui, tous les noms de machine sont des localhost)
 			//machine.setNom(InetAddress.getLocalHost().getHostName());
@@ -96,11 +85,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 	// Le premier paramètre sera le nom du démon
 	public static void main(String args[]) {
 		try {
-<<<<<<< HEAD
 			protectName.acquire();
-=======
-			mutex.acquire();
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
 			Daemon d = new DaemonImpl(args[0], Integer.parseInt(args[1]), args[2]);
 			// On l'enregistre auprès du serveur de nom, qu'il faudra avoir lancé au préalable !
             //Naming.rebind("//" + "localhost/" + ((DaemonImpl) d).getName(), d);
@@ -111,6 +96,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
             System.out.println("Done !");
             RMlance.acquire();
 
+            /*
             RMInterface rm = ((RMInterface) Naming.lookup("//localhost:1199/RessourceManager"));
             //DemonsLances.release();
             while (true) {
@@ -121,6 +107,7 @@ public class DaemonImpl extends UnicastRemoteObject implements Daemon {
 					e.printStackTrace();
 				}
             }
+            */
 			
 		} catch (Exception e) {
 			e.printStackTrace();

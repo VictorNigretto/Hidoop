@@ -25,6 +25,9 @@ public interface NameNode extends Remote {
 	/* Coucou à vous ! :D ok super on s'en occupe =) */
 	/* Si ça vous dérange pas, on va un petit peu modifier la spec ^^ */
 		
+	/** Renvoie la liste des toutes les machines*/
+	public List<Machine> getMachines() throws RemoteException;
+
 	/** Renvoie la liste des fragments associés à un fichier sur HDFS
 	 * La collection est vide si le fichier n'est pas présent.
 	 * Les fragments sont numérotés ainsi : nomFichier + i où i est le numéro du fragment
@@ -52,10 +55,6 @@ public interface NameNode extends Remote {
 	
 	/** Renvoie la liste des machines qui contiennent au moins un fragment du fichier donné en paramètre*/
 	public List<Machine> getMachinesFichier(String nomFichier) throws RemoteException;
-
-	/** Renvoie la liste des toutes les machines*/
-
-	public List<Machine> getMachines() throws RemoteException;
 	
 	/** Indique au NameNode que l'on rajoute un fichier à la base de données */
 	public void ajoutFichierHdfs(String nomFichier) throws RemoteException;

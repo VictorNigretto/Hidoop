@@ -166,6 +166,7 @@ public class HdfsClient {
 
                     //On l'envoie
                     for (int i = 0; i < factReplication; i++) {
+                    	System.out.println("nom machine : " + firstMachine.getNom() + " port : " + firstMachine.getPort());
                         m.openClient(firstMachine.getNom(),firstMachine.getPort());
                         m.send(Commande.CMD_WRITE);
                         System.out.println("envoyée au serveur " + firstMachine.getNom());

@@ -125,9 +125,9 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 				meilleureMachine = m;
 			}
 		}
+		System.out.println("machine : " + meilleureMachine);
 		return meilleureMachine;
 	}
-
 
 	public List<Machine> getAllMachinesFragment(String nomFragment) throws RemoteException{
 		List<Machine> mFrag = new ArrayList<>();
