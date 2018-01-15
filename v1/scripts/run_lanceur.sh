@@ -14,6 +14,10 @@
 java -cp bin/ application/RunAnnuaire &
 echo "On lance l'annuaire ..."
 
+# On lance le Ressource Manager
+#java -cp bin/ ordo/RessourceManager &
+#echo "On lance le ressource manager ..."
+
 # On lance le name node
 java -cp bin/ hdfs/NameNodeImpl setUp.txt &
 echo "On lance le NameNode ..."

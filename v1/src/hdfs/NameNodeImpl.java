@@ -163,7 +163,8 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 
 	public List<Machine> getMachinesFichier(String nomFichier) throws RemoteException{
 		List<Machine> list = new ArrayList<>();
-		
+		System.out.println("nomFichier =" +nomFichier);
+		System.out.println("machines = " + machines);
 		// Pour chaque machine
 		for(Machine m : machines) {
 			// On vérifie si elle possède un fragment de ce fichier
@@ -182,7 +183,7 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 				}
 			}
 		}
-		
+		System.out.println("list = " + list);
 		return list;
 	}
 	
@@ -200,6 +201,7 @@ public class NameNodeImpl extends UnicastRemoteObject implements NameNode {
 			&& machine.getPort() == m.getPort()
 			&& machine.getNomDaemon().equals(m.getNomDaemon())) {
 				m.getFragments().add(nomFragment);
+				System.out.println("liste_frag=" +m.getFragments());
 			}
 		}
 		Fichier f = fichiers.get(nomFichier);

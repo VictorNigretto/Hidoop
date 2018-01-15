@@ -12,8 +12,4 @@ public class threadRM extends Thread{
     public void  run() {
     	RessourceManager.main(commande);
     }
-
-    
-
-
 }

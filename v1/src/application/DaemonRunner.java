@@ -17,7 +17,6 @@ public class DaemonRunner extends Thread {
 	}
 
 	public void run() {
-		
         DaemonImpl.main(cmd);
 	}
 }

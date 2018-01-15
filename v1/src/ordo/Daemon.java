@@ -18,6 +18,6 @@ public interface Daemon extends Remote {
 	// Le callback sert à dire au job qu'on a terminé de faire le map
 	public void runMap (Mapper m, Format reader, Format writer, CallBack cb) throws RemoteException;
 	
-	public Semaphore getRMlance() throws RemoteException;
+
 
 }

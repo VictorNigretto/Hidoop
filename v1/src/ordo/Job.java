@@ -74,7 +74,7 @@ public class Job implements JobInterface {
         // 2) les récupérer quand ils ont finis
         // 3) les concatener dans le fichier résultat avec le reduce qui s'exécutera sur tous les résultats des maps
 
-    	
+
     	System.out.println("Lancement du job ...");
     	
     	
@@ -107,6 +107,14 @@ public class Job implements JobInterface {
 			e.printStackTrace();
 		}
 
+		/*try {
+			for(Machine m : ResMan.getMachines()) {
+				DaemonImpl.DemonsLances.release();
+			}
+		} catch (RemoteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}*/
 		// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
 		List<Daemon> demons = initDemons(0);
@@ -176,6 +184,8 @@ public class Job implements JobInterface {
 
 		//Suppression du fichier du ressourceManager
 		try {
+			System.out.println(ResMan);
+			System.out.println(inputFName);
 			ResMan.enleverFichier(inputFName);
 		} catch (RemoteException e) {
 			e.printStackTrace();
