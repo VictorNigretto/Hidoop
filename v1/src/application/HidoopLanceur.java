@@ -3,6 +3,7 @@ package application;
 import hdfs.Machine;
 import hdfs.NameNode;
 import hdfs.NameNodeImpl;
+import ordo.DaemonImpl;
 import ordo.RMInterface;
 import ordo.RessourceManager;
 
@@ -13,6 +14,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 
 public class HidoopLanceur {
@@ -63,7 +65,7 @@ public class HidoopLanceur {
 			e.printStackTrace();
 		}
 
-
+        Semaphore mutex = new Semaphore(1);
         List<Machine> machines;
 		try {
 			machines = nn.getMachines();
@@ -72,8 +74,17 @@ public class HidoopLanceur {
 	            String[] port = {String.valueOf(m.getPort())};
 	            new ServerRunner(port).start();
 	            // Lancer les Daemons (en local)
-	            String[] nomDeamon = {m.getNomDaemon()};
-	            new DaemonRunner(m.getNomDaemon(), m.getPort(), m.getNom()).start();
+	           // try {
+					//mutex.acquire();
+					DaemonRunner dr = new DaemonRunner(m.getNomDaemon(), m.getPort(), m.getNom());           
+		            dr.start();
+		        /*    mutex.release();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}*/
+	            
+	            
 
 	        }
 		} catch (RemoteException e) {

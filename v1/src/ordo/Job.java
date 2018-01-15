@@ -109,18 +109,7 @@ public class Job implements JobInterface {
 
 		// récupérer la liste des démons sur l'annuaire
 		System.out.println("Récupération de la liste des Daemons ...");
-    	List<Daemon> demons = new ArrayList<>();
-    	for(int i = 0; i < this.numberOfMaps; i++) {
-    		try {
-    		    // On va récupérer les Démons en RMI sur un annuaire
-				// TODO => généraliser à plusieurs démons sur plusieurs machines
-    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
-				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
-				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-    	}
+		List<Daemon> demons = initDemons(0);
     	System.out.println("OK\n");
 
     	
@@ -160,6 +149,7 @@ public class Job implements JobInterface {
 	        	inputTmp = new FormatKV(input.getFname() + "" + i);
 			}
 	        Format interTmp = new FormatKV(inter.getFname() + "" + i);
+	        
 			// on appelle le map sur le démon
 			MapRunner mapRunner = new MapRunner(d, mr, inputTmp, interTmp, cb);
 			mapRunner.start();
@@ -220,6 +210,41 @@ public class Job implements JobInterface {
 	*****************************************/
 
 
+    public List<Daemon>  initDemons(int debut) {
+    	List<Daemon> demons = new ArrayList<>();
+    	for(int i = debut; i < this.numberOfMaps; i++) {
+    		try {
+    		    // On va récupérer les Démons en RMI sur un annuaire
+				// TODO => généraliser à plusieurs démons sur plusieurs machines
+    			System.out.println("On se connecte à : " + "//localhost:1199/" + machines.get(i));
+				demons.add((Daemon) Naming.lookup("//localhost:1199/" + machines.get(i)));
+				//demons.add((Daemon) Naming.lookup("//localhost/premierDaemon"));
+    		} catch (RemoteException | NotBoundException e) {
+    			// Dans ce cas on essaye de changer de Daemon
+    			System.out.println("Veuillez patienter un moment, nous essayons un autre Daemon");
+    			try {
+    				RMInterface RM = (RMInterface) Naming.lookup("//localhost:1199/RessourceManager");
+    				String nomDemon = RM.RecupererDemonFragment(inputFName);
+    				
+    				if (nomDemon == null) {
+    					System.out.println("Il n'y a plus de démons fonctionnels pouvant effectuer le map sur ce fragment de fichier");
+    				}else {
+    					machines.set(i, nomDemon);  				}
+    					initDemons(i);
+    			} catch (NotBoundException e1) {
+    				e.printStackTrace();
+    			} catch (MalformedURLException e1) {
+    				e1.printStackTrace();
+    			} catch (RemoteException e1) {
+    				System.out.println("Meme le RessourceManager est mort, nous ne pouvons plus rien faire, veuillez nous excuser");
+    			}
+    		} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
+    	return demons;
+    }
+    
     public void setNumberOfReduces(int tasks){
     	this.numberOfReduces = tasks;
     }
