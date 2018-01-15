@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import formats.Format.Commande;
@@ -28,7 +29,6 @@ public class HdfsServer {
 		ServerSocket ss = new ServerSocket(port); // pour attendre les messages
 		
 		System.out.println("Serveur démarré :)");
-		
 		// Le serveur attends qu'on le sollicite
 		while (true) {
 			// Récupérer la commande demandé

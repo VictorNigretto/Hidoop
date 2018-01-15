@@ -47,6 +47,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		this.demonsFonctionnent = new HashMap<String, Boolean>();
 		this.demonsDuFragment = new HashMap<String, List<String>>();
 		this.quantiteJob = new HashMap<String, Integer>();
+		this.nomMachines = new HashMap<String, String>();
 		
 		// on initialise la liste des demons
 		BufferedReader br = null;
@@ -98,7 +99,8 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		for (Machine m : machines){
 			DaemonImpl.RMlance.release();
         }
-		
+		System.out.println(DaemonImpl.RMlance);
+
 		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
 		while (true) {
 			List<String> rm = new ArrayList<String>();
@@ -221,14 +223,14 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	//méthode donnant un Demon contenant un fragment de fichier
 
 	public void ajouterFichier(String Fname) {
-		List<Machine> machines;
+		List<Machine> machinesNN = new ArrayList<>();
 		List<String> fragmentsRecup;
 
 		try {
-			machines = notreNameNode.getMachinesFichier(Fname);
+			machinesNN = notreNameNode.getMachinesFichier(Fname);
 			System.out.println(machines);
 			System.out.println(Fname);
-			for (Machine m : machines) {
+			for (Machine m : machinesNN) {
 				// mise à jour de demons
 				machines.add(m);
 				fragmentsRecup = notreNameNode.getAllFragmentFichierMachine(m, Fname);
