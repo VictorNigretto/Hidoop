@@ -45,11 +45,8 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 		this.demonsFonctionnent = new HashMap<String, Boolean>();
 		this.demonsDuFragment = new HashMap<String, List<String>>();
 		this.quantiteJob = new HashMap<String, Integer>();
-<<<<<<< HEAD
 		this.nomMachines = new HashMap<String, String>();
-=======
-		this.nomMachines = new HashMap<String,String>();
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
+
 		
 		// on initialise la liste des demons
 		BufferedReader br = null;
@@ -96,32 +93,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 			// On récupère la liste des machines
 			List<Machine> machines = ResMan.getNotreNameNode().getMachines();
 
-<<<<<<< HEAD
-		List<Machine> machines =null;
-	
-			machines = ResMan.getNotreNameNode().getMachines();
 
-		for (Machine m : machines){
-			DaemonImpl.RMlance.release();
-        }
-		System.out.println(DaemonImpl.RMlance);
-
-		// Boucle while appelant les demons pour confirmer leur etat et met a jour la liste des demons si un ne fonctionne plus
-		while (true) {
-			List<String> rm = new ArrayList<String>();
-			String nomD;
-			// TODO le diviser en plusieurs threads
-			for (Machine m : ResMan.getMachines()) {
-				nomD = m.getNomDaemon();
-				ResMan.getDemonsFonctionnent().put((nomD), false);
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				if (ResMan.getDemonsFonctionnent().get(nomD) == false) {
-					rm.add(nomD);
-=======
 			for (Machine m : machines){
 				DaemonImpl.RMlance.release();
 		    }
@@ -147,7 +119,6 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 					if (ResMan.getDemonsFonctionnent().get(nomD) == false) {
 						rm.add(nomD);
 					}
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
 				}
 				
 				// Donc on supprime tous les démons morts du RM !
@@ -253,7 +224,6 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 	//méthode donnant un Demon contenant un fragment de fichier
 
 	public void ajouterFichier(String Fname) {
-<<<<<<< HEAD
 		List<Machine> machinesNN = new ArrayList<>();
 		List<String> fragmentsRecup;
 
@@ -262,16 +232,7 @@ public class RessourceManager extends UnicastRemoteObject implements RMInterface
 			System.out.println(machines);
 			System.out.println(Fname);
 			for (Machine m : machinesNN) {
-=======
-		List<Machine> machinesAdd;
-		List<String> fragmentsRecup;
 
-		try {
-			machinesAdd = notreNameNode.getMachinesFichier(Fname);
-			System.out.println(machines);
-			System.out.println(Fname);
-			for (Machine m : machinesAdd) {
->>>>>>> cca4e172aff8e5fb199c5650c60c64c26ac419c3
 				// mise à jour de demons
 				machines.add(m);
 				fragmentsRecup = notreNameNode.getAllFragmentFichierMachine(m, Fname);
